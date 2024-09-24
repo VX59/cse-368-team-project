@@ -1,12 +1,9 @@
-proc mapping path /proc/34577/maps
+proc mapping path /proc/11757/maps
 file is open
-64842fb08000-64842fc45000 r-xp 00011000 fe:02 17711170                   /home/jacob/AC/bin_unix/native_client
-page 0x64842FB08000
-set skin address 0x64842FB365F0
-64842fb08000-64842fc45000 r-xp 00011000 fe:02 17711170                   /home/jacob/AC/bin_unix/native_client
-page 0x64842FB08000
-set skin address 0x64842FB365F0
-check input address 0x64842FB71B00
+57686ecf9000-57686ee36000 r-xp 00011000 fe:02 17711170                   /home/jacob/AC/bin_unix/native_client
+page 0x57686ECF9000
+set skin address 0x57686ED275F0
+check input address 0x57686ED62B00
 player offset 0x175E9E
-player entity 0x64846ECDF3E0
-player health 3E8
+player entity 0x57686F739430
+player health 64

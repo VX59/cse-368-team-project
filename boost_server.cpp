@@ -1,6 +1,6 @@
 //
-// refactored_echo_server.cpp
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~
+// echo_server.cpp
+// ~~~~~~~~~~~~~~~
 //
 // Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
@@ -23,24 +23,20 @@ using boost::asio::detached;
 using boost::asio::use_awaitable;
 namespace this_coro = boost::asio::this_coro;
 
-awaitable<void> echo_once(tcp::socket& socket)
-{
-  char data[128];
-  std::size_t n = co_await socket.async_read_some(boost::asio::buffer(data), use_awaitable);
-  co_await async_write(socket, boost::asio::buffer(data, n), use_awaitable);    // writing the input back to the buffer
-}
-    
+#if defined(BOOST_ASIO_ENABLE_HANDLER_TRACKING)
+# define use_awaitable \
+  boost::asio::use_awaitable_t(__FILE__, __LINE__, __PRETTY_FUNCTION__)
+#endif
+
 awaitable<void> echo(tcp::socket socket)
 {
   try
   {
+    char data[1024];
     for (;;)
     {
-      // The asynchronous operations to echo a single chunk of data have been
-      // refactored into a separate function. When this function is called, the
-      // operations are still performed in the context of the current
-      // coroutine, and the behaviour is functionally equivalent.
-      co_await echo_once(socket);
+      std::size_t n = co_await socket.async_read_some(boost::asio::buffer(data), use_awaitable);
+      co_await async_write(socket, boost::asio::buffer(data, n), use_awaitable);
     }
   }
   catch (std::exception& e)
@@ -61,10 +57,9 @@ awaitable<void> listener()
 }
 
 int main()
-{               
+{
   try
   {
-    printf("starting main thread");
     boost::asio::io_context io_context(1);
 
     boost::asio::signal_set signals(io_context, SIGINT, SIGTERM);

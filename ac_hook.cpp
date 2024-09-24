@@ -8,11 +8,57 @@
 #include <string>
 #include <iostream>
 #include <iomanip>
+#include <thread>
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/detached.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/signal_set.hpp>
+#include <boost/asio/write.hpp>
+#include <cstdio>
 
-struct player_entity 
+using boost::asio::ip::tcp;
+using boost::asio::awaitable;
+using boost::asio::co_spawn;
+using boost::asio::detached;
+using boost::asio::use_awaitable;
+namespace this_coro = boost::asio::this_coro;
+
+awaitable<void> echo(tcp::socket socket, std::string response_message)
 {
-    __uint64_t health;
-} player1;
+    try
+    {
+        char data[1024];
+        for (;;)
+        {
+            std::size_t message_length = co_await socket.async_read_some(boost::asio::buffer(data), use_awaitable);
+
+            // send response
+            size_t response_length = response_message.size();
+            co_await async_write(socket, boost::asio::buffer(response_message, response_length), use_awaitable);
+        }
+    }
+    catch (std::exception& e)
+    {
+        std::printf("echo Exception: %s\n", e.what());
+    }
+}
+
+#if defined(BOOST_ASIO_ENABLE_HANDLER_TRACKING)
+# define use_awaitable \
+  boost::asio::use_awaitable_t(__FILE__, __LINE__, __PRETTY_FUNCTION__)
+#endif
+
+awaitable<void> listener(std::string response_message)
+{
+    auto executor = co_await this_coro::executor;
+    tcp::acceptor acceptor(executor, {tcp::v4(), 55555});
+    for (;;)
+    {
+        tcp::socket socket = co_await acceptor.async_accept(use_awaitable);
+        co_spawn(executor, echo(std::move(socket), response_message), detached);
+    }
+}
 
 __attribute__((constructor)) void init() 
 {
@@ -51,7 +97,7 @@ __attribute__((constructor)) void init()
     __uint64_t page_number = static_cast<__uint64_t>(std::strtoull(page_substr.c_str(),nullptr, 16));
 
     message << "page "<< "0x" << std::hex << std::uppercase << page_number << "\n"; 
-
+        
     __uint64_t set_skin_offset = 0x2E5F0;
     __uint64_t set_skin = page_number + set_skin_offset;
 
@@ -74,5 +120,28 @@ __attribute__((constructor)) void init()
 
     *(__uint64_t*)(player_entity + 0x100) = 1000; // overwrite player health
 
+    outFile << message.str();
     outFile.close();
+
+    try
+    {
+        std::thread server_thread([player_health]()
+        {
+            boost::asio::io_context io_context(1);
+
+            boost::asio::signal_set signals(io_context, SIGINT, SIGTERM);
+            signals.async_wait([&](auto, auto){ io_context.stop(); });
+
+            std::ostringstream response;
+            response << "player health " << player_health << "\n";
+            co_spawn(io_context, listener(response.str()), detached);
+
+            io_context.run();
+        });
+        server_thread.detach();
+    }
+    catch (std::exception& e)
+    {
+        std::printf("Exception: %s\n", e.what());
+    }
 }
