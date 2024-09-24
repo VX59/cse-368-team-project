@@ -1,5 +1,12 @@
-parse buffer 596dbbce9000set skin address 596dbbd175f0
-check input address 596dbbd52b00
-player offset 175e9e
-player entity 596dd02ae430
-health 100
+proc mapping path /proc/34577/maps
+file is open
+64842fb08000-64842fc45000 r-xp 00011000 fe:02 17711170                   /home/jacob/AC/bin_unix/native_client
+page 0x64842FB08000
+set skin address 0x64842FB365F0
+64842fb08000-64842fc45000 r-xp 00011000 fe:02 17711170                   /home/jacob/AC/bin_unix/native_client
+page 0x64842FB08000
+set skin address 0x64842FB365F0
+check input address 0x64842FB71B00
+player offset 0x175E9E
+player entity 0x64846ECDF3E0
+player health 3E8

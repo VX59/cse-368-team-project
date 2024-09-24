@@ -4,12 +4,10 @@
 #include <dlfcn.h>
 #include <sys/types.h>
 #include <stdlib.h>
-//void _Z8_setskinii(void *, int skin, int team);
 
 __attribute__((constructor)) void init() {
     FILE *fp = fopen("/home/jacob/UB/cse368/cse-368-team-project/hook_log","a");
     
-    //fprintf(fp, "set skin %p\n", &_Z8_setskinii);
     pid_t pid = getpid();
     char buffer[256];
     sprintf(buffer, "/proc/%d/maps", pid);
