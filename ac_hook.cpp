@@ -1,21 +1,4 @@
-#include <stdio.h>
-#include <sys/mman.h>
-#include <unistd.h>
-#include <dlfcn.h>
-#include <sys/types.h>
-#include <stdlib.h>
-#include <fstream>
-#include <string>
-#include <iostream>
-#include <iomanip>
-#include <thread>
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/detached.hpp>
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/signal_set.hpp>
-#include <boost/asio/write.hpp>
-#include <cstdio>
+#include "hack_util.h"
 
 using boost::asio::ip::tcp;
 using boost::asio::awaitable;
@@ -34,8 +17,9 @@ awaitable<void> echo(tcp::socket socket, std::string response_message)
             std::size_t message_length = co_await socket.async_read_some(boost::asio::buffer(data), use_awaitable);
 
             // send response
-            size_t response_length = response_message.size();
-            co_await async_write(socket, boost::asio::buffer(response_message, response_length), use_awaitable);
+            size_t response_size = response_message.size();
+            co_await async_write(socket, boost::asio::buffer(&response_size, sizeof(response_size)));
+            co_await async_write(socket, boost::asio::buffer(response_message), use_awaitable);
         }
     }
     catch (std::exception& e)
@@ -115,11 +99,11 @@ __attribute__((constructor)) void init()
     __uint64_t player_entity = *(__uint64_t*)(set_skin + 0xa + player_ip_offset);
     message << "player entity " << "0x" << std::hex << std::uppercase << player_entity << "\n";
 
-    __uint64_t player_health = *(__uint64_t*)(player_entity + 0x100);
-    message << "player health " << player_health << "\n";
-
     *(__uint64_t*)(player_entity + 0x100) = 1000; // overwrite player health
 
+    __uint64_t player_health = *(__uint64_t*)(player_entity + 0x100);
+    message << "player health " << player_health << "\n";
+    
     outFile << message.str();
     outFile.close();
 
@@ -132,9 +116,18 @@ __attribute__((constructor)) void init()
             boost::asio::signal_set signals(io_context, SIGINT, SIGTERM);
             signals.async_wait([&](auto, auto){ io_context.stop(); });
 
-            std::ostringstream response;
-            response << "player health " << player_health << "\n";
-            co_spawn(io_context, listener(response.str()), detached);
+            Message rpns;
+            rpns.sender = "server";
+            rpns.receiver = "jacob";
+            rpns.type = 24;
+            memset(rpns.data, 0, sizeof(rpns.data));
+            memcpy(rpns.data,&player_health, sizeof(player_health));
+
+            std::ostringstream obuffer;
+            rpns.serialize(obuffer);
+            std::string response = obuffer.str();
+
+            co_spawn(io_context, listener(response), detached);
 
             io_context.run();
         });
