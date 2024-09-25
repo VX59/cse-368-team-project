@@ -76,7 +76,7 @@ int main() {
         std::cout << "receiver: " << response.receiver << '\n';
         std::cout << "type: " << response.type << '\n';
 
-        printf("Buffer contents: ");
+        printf("data contents: ");
         for (size_t i = 0; i < sizeof(__uint64_t); i++) {
             printf("%02X ", (unsigned char)response.data[i]);
         }
