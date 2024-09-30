@@ -1,9 +1,0 @@
-proc mapping path /proc/49794/maps
-file is open
-5739b96ac000-5739b97e9000 r-xp 00011000 fe:02 17711170                   /home/jacob/AC/bin_unix/native_client
-page 0x5739B96AC000
-set skin address 0x5739B96DA5F0
-check input address 0x5739B9715B00
-player offset 0x175E9E
-player entity 0x5739C4AF73E0
-player health 3E8
