@@ -8,13 +8,14 @@ void hook_function() {
     std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log");
 
     outFile << "looks like there was a detour hehe\n";
-    outFile.close();
+    outFile.close();        
 }
 
 __uint64_t check_input = 0;
 __uint8_t *original_func_prologue = nullptr;
 __uint64_t page_number = 0;
 __uint8_t jump_bytes = 16;
+__uint64_t page_size = 0x13D000;
 
 __attribute__((constructor)) void init()
 {
@@ -83,17 +84,16 @@ __attribute__((constructor)) void init()
     
     std::memcpy(original_func_prologue,(void *)check_input, jump_bytes);     // copy the original 12 bytes to save for recovery .. segfaulting
 
-    // check input original 12 bytes
+    // check input original 16 bytes
     for (int i = 0; i < jump_bytes; i++) {
         outFile << std::hex << (int)(*(__uint8_t*)(check_input + i)) << " ";
     }
     outFile << std::endl;
-    __uint64_t page_size = sysconf(_SC_PAGE_SIZE);
 
     if (mprotect((void*)page_number, page_size, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) {
         perror("mprotect");
         outFile << "mprotect failed\n";
-        return;
+        return; 
     }
 
     outFile << "change protections on " << std::hex << page_number << std::endl;
@@ -115,8 +115,13 @@ __attribute__((constructor)) void init()
     outFile << line << "\n";
 
     outFile << std::hex << (void *)check_input << " " << std::hex << (__uint64_t)hook_instruction << " " << (__uint64_t)jump_bytes << std::endl;
+            std::memcpy((void*)check_input, hook_instruction, jump_bytes);  // overwrite the first 12 bytes of checkinput to jump
 
-    std::memcpy((void*)check_input, hook_instruction, jump_bytes);  // overwrite the first 12 bytes of checkinput to jump
+    // check input original 16 bytes
+    for (int i = 0; i < jump_bytes; i++) {
+        outFile << std::hex << (int)(*(__uint8_t*)(check_input + i)) << " ";
+    }
+    outFile << std::endl;
 
     mprotect((void*)page_number, page_size, PROT_READ | PROT_EXEC);
     outFile.close();
@@ -124,10 +129,10 @@ __attribute__((constructor)) void init()
 
 __attribute__((destructor)) void unload() {
     std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log");
-    __uint64_t page_size = sysconf(_SC_PAGE_SIZE);
+
     mprotect((void*)page_number, page_size, PROT_READ | PROT_WRITE | PROT_EXEC);
 
-    std::memcpy((void*)check_input, original_func_prologue, jump_bytes);
+    //std::memcpy((void*)check_input, original_func_prologue, jump_bytes);
     
     mprotect((void*)page_number, page_size, PROT_READ | PROT_EXEC);
     
