@@ -1,0 +1,11 @@
+proc mapping path /proc/30304/maps
+file is open
+59d08f291000-59d08f3ce000 r-xp 00011000 fe:02 17711170                   /home/jacob/AC/bin_unix/native_client
+check input address 0x59D08F2FAB00
+F5943739
+48 B8 39 37 94 F5 63 7E 0 0 FF E0 0 0 0 0 
+55 41 57 41 56 41 55 41 54 53 48 81 EC A8 1 0 
+change protections on 59D08F291000
+file is open
+59d08f291000-59d08f292000 rwxp 00011000 fe:02 17711170                   /home/jacob/AC/bin_unix/native_client
+0x59d08f2fab00 59D0A38181C0 10

@@ -4,22 +4,26 @@
 #include <unistd.h>
 #include <dlfcn.h>
 
-void hook_function(std::ostringstream message) {
-    message << "looks like there was a detour hehe";
+void hook_function() {
+    std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log");
+
+    outFile << "looks like there was a detour hehe\n";
+    outFile.close();
 }
 
 __uint64_t check_input = 0;
-
-unsigned char *original_prolg = (unsigned char*)malloc(12);
+__uint8_t *original_func_prologue = nullptr;
 __uint64_t page_number = 0;
-long page_size = sysconf(_SC_PAGE_SIZE);
-
+__uint8_t jump_bytes = 16;
 
 __attribute__((constructor)) void init()
 {
-    std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/hook_log");
-    std::ostringstream message;
 
+    original_func_prologue = new __uint8_t[jump_bytes];
+
+    std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log");
+
+    std::ostringstream message;
     // get proc mappings
     pid_t pid = getpid();
     std::ostringstream mapping;
@@ -36,64 +40,98 @@ __attribute__((constructor)) void init()
     outFile << "file is open\n";
 
     std::string line;
-    int i = 0;
-    int target_page = 2;
-    while (std::getline(file, line))
-    {
-        i++;
-        if (i == target_page)
-        {
-            break;
-        }
+    for (int i = 0; i < 2; i++) {
+        std::getline(file,line);
     }
-    message << line << "\n";
+
+    file.close();
+
+    outFile << line << "\n";
 
     std::string page_substr = line.substr(0,12);
     page_number = static_cast<__uint64_t>(std::strtoull(page_substr.c_str(),nullptr, 16));
 
     __uint64_t check_input_offset = 0x69B00;
     check_input = page_number + check_input_offset; // detour this address
-    message << "check input address " << "0x" << std::hex << std::uppercase << check_input  << "\n";
+    outFile << "check input address " << "0x" << std::hex << std::uppercase << check_input  << "\n";
 
     __uint64_t hook_func_addr = (__uint64_t)&hook_function;
+    __uint8_t* hook_instruction = new __uint8_t[jump_bytes];
 
-    unsigned char* hook_instruction = (unsigned char*)malloc(12);
+    std::memset(hook_instruction, 0, jump_bytes);
+
     hook_instruction[0] = 0x48; // REX.W prefix 64-bit operand size
     hook_instruction[1] = 0xB8;  // mov rax, imm64
     std::memcpy(hook_instruction+2, &hook_func_addr, sizeof(hook_func_addr));
     hook_instruction[10] = 0xFF; // jmp rax
     hook_instruction[11] = 0xE0; // opcode ext for jmp rax
-    message << hook_instruction << std::endl;
-    outFile << message.str();
-
-    // change page protections
-    void* aligned_page_num = (void*)((__uint64_t)page_number & ~(page_size-1));
     
-    message << std::hex << page_number << " " << std::hex << aligned_page_num << std::endl;
-    if (mprotect(aligned_page_num, page_size, PROT_READ | PROT_WRITE) == -1) {
+    for (int i = 12; i < 16; i++) {
+        hook_instruction[i] = 0x0;
+    }
+
+    outFile << std::hex << (int)hook_func_addr << std::endl;
+
+    // hook instruction bytes
+    for (int i = 0; i < jump_bytes; i++) {
+        outFile << std::hex << (int)hook_instruction[i];
+        outFile << " ";
+    }
+    outFile << std::endl;
+
+    // problem ?    
+    
+    std::memcpy(original_func_prologue,(void *)check_input, jump_bytes);     // copy the original 12 bytes to save for recovery .. segfaulting
+
+    // check input original 12 bytes
+    for (int i = 0; i < jump_bytes; i++) {
+        outFile << std::hex << (int)(*(__uint8_t*)(check_input + i)) << " ";
+    }
+    outFile << std::endl;
+    __uint64_t page_size = sysconf(_SC_PAGE_SIZE);
+
+    if (mprotect((void*)page_number, page_size, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) {
         perror("mprotect");
-        message << "mprotect failed\n";
+        outFile << "mprotect failed\n";
         return;
     }
-    message << "change protections on" << std::hex << aligned_page_num << std::endl;
-    outFile << message.str();
-    std::memcpy((void*)original_prolg,(void*)check_input, 12);     // copy the original 12 bytes to save for recovery
-    // //std::memcpy((void*)check_input, (void*)hook_instruction, 12);  // overwrite the first 12 bytes of checkinput to jump
-    // mprotect(aligned_page_num, page_size, PROT_READ);
-    
-    outFile.close();
 
+    outFile << "change protections on " << std::hex << page_number << std::endl;
+    
+    std::ifstream file_again(proc_mapping_path);
+
+    if (!file_again.is_open()) 
+    {
+        outFile << "failed to open proc mapping\n";
+    }
+
+    outFile << "file is open\n";
+
+    for (int i = 0; i < 2; i++) {
+        std::getline(file_again,line);
+    }
+
+    file_again.close();
+    outFile << line << "\n";
+
+    outFile << std::hex << (void *)check_input << " " << std::hex << (__uint64_t)hook_instruction << " " << (__uint64_t)jump_bytes << std::endl;
+
+    std::memcpy((void*)check_input, hook_instruction, jump_bytes);  // overwrite the first 12 bytes of checkinput to jump
+
+    mprotect((void*)page_number, page_size, PROT_READ | PROT_EXEC);
+    outFile.close();
 }
 
 __attribute__((destructor)) void unload() {
-    std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/unhook_log");
-    std::ostringstream message;
-    void* aligned_page_num = (void*)((__uint64_t)page_number & ~(page_size-1));
-    mprotect(aligned_page_num, page_size, PROT_READ | PROT_WRITE);
-    std::memcpy((void*)check_input, (void*)original_prolg, 12);
-    mprotect(aligned_page_num, page_size, PROT_READ);
-    message << "successfully unhooked";
-    outFile << message.str();
+    std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log");
+    __uint64_t page_size = sysconf(_SC_PAGE_SIZE);
+    mprotect((void*)page_number, page_size, PROT_READ | PROT_WRITE | PROT_EXEC);
+
+    std::memcpy((void*)check_input, original_func_prologue, jump_bytes);
+    
+    mprotect((void*)page_number, page_size, PROT_READ | PROT_EXEC);
+    
+    outFile << "successfully unhooked\n";
     outFile.close();
 
 }
