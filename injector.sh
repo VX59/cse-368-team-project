@@ -44,7 +44,7 @@ unload() {
     fi
 
     gdb -n --batch -ex "attach $PROCID" \
-                   -ex "call ((int (*) (void *)) dlclose)((void *) $LIB_HANDLE)" \
+                   -ex "call ((int (*) (void *)) dlclose)($LIB_HANDLE)" \
                    -ex "detach" > /dev/null 2>&1
 
     echo "Library has been unloaded!"
