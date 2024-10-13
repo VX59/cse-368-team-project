@@ -1,1 +1,6 @@
-successfully unhooked
+file is open
+5a8a7486e000-5a8a749ab000 r-xp 00011000 fe:02 17711170                   /home/jacob/AC/bin_unix/native_client
+check input address 0x5A8A748D7B00
+A75047FD
+90 90 90 90 90 90 90 90 90 90 0 0 0 0 0 0 
+successfully hooked
