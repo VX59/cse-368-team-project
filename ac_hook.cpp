@@ -1,76 +1,73 @@
-#include "hack_util.h"
 #include <cstring>
+#include <unistd.h>
+#include <fstream>
+#include <sstream>
+#include <stdexcept>
 #include <sys/mman.h>
 #include <unistd.h>
-#include <dlfcn.h>
+#include <random>
 
-__uint8_t *original_func_prologue = nullptr;
-__uint64_t check_input = NULL;
+__uint64_t check_input_address = NULL;
 __uint64_t page_number = NULL;
-__uint8_t jump_bytes = 16;
-__uint64_t page_size = 0x13D000;
 
-void hook_function()
-{
-    //std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log", std::ofstream::app);
-    
-    //outFile << "looks like there was a detour hehe\n";
-    //outFile.close();
+const __uint64_t injection_offset = 17;
+const __uint8_t hook_instruction_length = 17;
+const __uint64_t page_size = 0x13D000;
 
-    // void (*original_func)(void) = (void (*) (void))(check_input+16);
-    // __asm__( "push %rbp;"
-    //          "push %r15;"
-    //          "push %r14;"
-    //          "push %r13;"
-    //          "push %r12;"
-    //          "push %rbx;");
-    // original_func();
+// super evil code >:)
+void hook_function() {
+    std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log");
 
-// execute first 16 bytes of original function
-// execute the rest of original function starting from handle+17
+    // generate a random number so i can see the log file changing
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> distr(1, 1000);
+
+    int x = distr(gen);
+
+    outFile << "looks like there is a detour here hehe " << x;
+    outFile.close();
 }
 
-void detour_hook(void *target_func, __uint8_t *hook_instruction) 
+void __attribute__((naked)) trampoline_function()
 {
-    std::memcpy(original_func_prologue,target_func, jump_bytes);     // save original instructions
+    // execute stolen instructions
+    __asm__(
+        "mov %fs:0x28,%rax;"
+        "mov %rax,0x1a0(%rsp);"
+    );
+
+    __uint64_t hook_function_address = (__uint64_t)&hook_function;
+    __asm__(
+        "call *%0;"
+        :
+        : "r" (hook_function_address)
+    );
+
+    // return controll flow to the game
+    __uint64_t return_address = check_input_address+injection_offset+hook_instruction_length;
+    __asm__(
+        "mov %0, %%rdx;"
+        "jmp *%%rdx;"
+        :
+        : "r" (return_address)
+        : "%rdx"
+    );
+}           
+
+void detour(void *hook_location, __uint8_t *hook_instruction) 
+{
     if (mprotect((void*)page_number, page_size, PROT_READ | PROT_WRITE | PROT_EXEC) != 0)
     {
-        perror("mprotect");
+        perror("mprotect error");
         return; 
     }
-    std::memcpy((void*)check_input, hook_instruction, jump_bytes);  // hook
+    std::memcpy(hook_location, hook_instruction, hook_instruction_length);  // hook
+
     mprotect((void*)page_number, page_size, PROT_READ | PROT_EXEC);
 }
 
-// jump here
-void __attribute__((naked)) trampoline_function()
-{
-    // jump to the detour hook from here after we store the original asm code
-    __asm__("push %rbp;"
-            "push %r15;"
-            "push %r14;"
-            "push %r13;"
-            "push %r12;"
-            "push %rbx;"
-            "sub $0x1a8,%rsp;"
-            );
-
-    __uint64_t hook_function_addr = (__uint64_t)&hook_function;
-    __uint64_t target_jump_addr = check_input+16;
-
-    __asm__(
-            "call *%0;"       // jumps to hook function
-            "jmp *%1;"        // jumps back to check input
-            :
-            : "r" (hook_function_addr), "r" (target_jump_addr)
-    );
-}
-
-void __attribute__((constructor)) init()
-{
-
-    original_func_prologue = new __uint8_t[jump_bytes];
-
+__uint64_t find_target_page() {
     std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log");
 
     // get proc mappings
@@ -100,37 +97,40 @@ void __attribute__((constructor)) init()
     std::string page_substr = line.substr(0,12);
     page_number = static_cast<__uint64_t>(std::strtoull(page_substr.c_str(),nullptr, 16));
 
-    __uint64_t check_input_offset = 0x69B00;
-    check_input = page_number + check_input_offset; // detour this address
-    outFile << "check input address " << "0x" << std::hex << std::uppercase << check_input  << "\n";
+    return page_number;
+}
 
-    __uint64_t trampoline_func_adder = (__uint64_t)&trampoline_function;
-    __uint8_t* hook_instruction = new __uint8_t[jump_bytes];
-
-    std::memset(hook_instruction, 0, jump_bytes);
-
-    hook_instruction[0] = 0x48; // REX.W prefix 64-bit operand size
-    hook_instruction[1] = 0xB8;  // mov rax, imm64
-    std::memcpy(hook_instruction+2, &trampoline_func_adder, sizeof(trampoline_func_adder));
-    hook_instruction[10] = 0xFF; // jmp rax
-    hook_instruction[11] = 0xE0; // opcode ext for jmp rax
+__uint8_t *formulate_detour_instructions() {
     
-    for (int i = 12; i < 16; i++) {
+    __uint64_t trampoline_function_address = (__uint64_t)&trampoline_function;
+    __uint8_t* hook_instruction = new __uint8_t[hook_instruction_length];
+    
+    hook_instruction[0] = 0x48;
+    hook_instruction[1] = 0xBA;
+    std::memcpy(hook_instruction+2, &trampoline_function_address, sizeof(trampoline_function_address));
+    hook_instruction[10] = 0xFF;
+    hook_instruction[11] = 0xE2;
+    
+    for (int i = 12; i < hook_instruction_length; i++) {
         hook_instruction[i] = 0x90;
     }
 
-    outFile << std::hex << (int)trampoline_func_adder << std::endl;
+    return hook_instruction;
+}
 
-    // hook instruction bytes
-    for (int i = 0; i < jump_bytes; i++)
-    {
-        outFile << std::hex << (int)hook_instruction[i];
-        outFile << " ";
-    }
+void __attribute__((constructor)) init()
+{
+    std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log");
+    __uint64_t page_number = find_target_page();
 
-    outFile << std::endl;
+    __uint64_t check_input_offset = 0x69B00;
 
-    detour_hook((void *)check_input, hook_instruction);
+    check_input_address = page_number + check_input_offset;
+
+    __uint8_t *hook_instruction = formulate_detour_instructions();
+    void *hook_location = (void*)(check_input_address+injection_offset);
+    
+    detour(hook_location, hook_instruction);
 
     outFile << "successfully hooked";
     outFile.close();
@@ -138,14 +138,15 @@ void __attribute__((constructor)) init()
 
 void __attribute__((destructor)) unload()
 {
-    std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log");
+    // // fix this ..
+    // std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log");
 
-    mprotect((void*)page_number, page_size, PROT_READ | PROT_WRITE | PROT_EXEC);
+    // mprotect((void*)page_number, page_size, PROT_READ | PROT_WRITE | PROT_EXEC);
 
-    std::memcpy((void*)check_input, original_func_prologue, jump_bytes);
+    // std::memcpy((void*)check_input_address, original_func_prologue, hook_instruction_length);
     
-    mprotect((void*)page_number, page_size, PROT_READ | PROT_EXEC);
+    // mprotect((void*)page_number, page_size, PROT_READ | PROT_EXEC);
     
-    outFile << "successfully unhooked\n";
-    outFile.close();
+    // outFile << "successfully unhooked\n";
+    // outFile.close();
 }

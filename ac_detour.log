@@ -1,6 +1,1 @@
-file is open
-627a16e31000-627a16f6e000 r-xp 00011000 fe:02 17711170                   /home/jacob/AC/bin_unix/native_client
-check input address 0x627A16E9AB00
-6CAF97E9
-E5 F9 A1 27 6 0 0 0 0 0 0 0 0 0 0 0 
-successfully hooked
+looks like there is a detour here hehe 832
