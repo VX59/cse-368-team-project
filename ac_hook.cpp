@@ -1,5 +1,5 @@
 #include "hack_util.h"
-#include "cstring"
+#include <cstring>
 #include <sys/mman.h>
 #include <unistd.h>
 #include <dlfcn.h>
@@ -38,7 +38,7 @@ void detour_hook(void *target_func, __uint8_t *hook_instruction)
         perror("mprotect");
         return; 
     }
-    std::memcpy((void*)(check_input+17), hook_instruction, jump_bytes);  // hook
+    std::memcpy((void*)check_input, hook_instruction, jump_bytes);  // hook
     mprotect((void*)page_number, page_size, PROT_READ | PROT_EXEC);
 }
 
@@ -108,19 +108,16 @@ void __attribute__((constructor)) init()
     __uint8_t* hook_instruction = new __uint8_t[jump_bytes];
 
     std::memset(hook_instruction, 0, jump_bytes);
-    for (int i = 0; i < 10; i++) {
+
+    hook_instruction[0] = 0x48; // REX.W prefix 64-bit operand size
+    hook_instruction[1] = 0xB8;  // mov rax, imm64
+    std::memcpy(hook_instruction+2, &trampoline_func_adder, sizeof(trampoline_func_adder));
+    hook_instruction[10] = 0xFF; // jmp rax
+    hook_instruction[11] = 0xE0; // opcode ext for jmp rax
+    
+    for (int i = 12; i < 16; i++) {
         hook_instruction[i] = 0x90;
     }
-
-    // hook_instruction[0] = 0x48; // REX.W prefix 64-bit operand size
-    // hook_instruction[1] = 0xB8;  // mov rax, imm64
-    // std::memcpy(hook_instruction+2, &trampoline_func_adder, sizeof(trampoline_func_adder));
-    // hook_instruction[10] = 0xFF; // jmp rax
-    // hook_instruction[11] = 0xE0; // opcode ext for jmp rax
-    
-    // for (int i = 12; i < 16; i++) {
-    //     hook_instruction[i] = 0x90;
-    // }
 
     outFile << std::hex << (int)trampoline_func_adder << std::endl;
 
