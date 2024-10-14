@@ -73,5 +73,9 @@ AC_detour::AC_detour(__uint64_t trampoline_function_addr)
 {
     trampoline_function_address = trampoline_function_addr;
     find_target_page();
+    formulate_detour_instructions();
     hook_location = (void*)(check_input_address+injection_offset);
+
+    inject_detour_instructions();
+
 }
