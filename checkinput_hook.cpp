@@ -1,10 +1,5 @@
 #include "ac_detour.h"
 
-//const __uint64_t injection_offset = 17;
-//const __uint8_t hook_instruction_length = 17;
-//const __uint64_t page_size = 0x13D000;
-//const __uint64_t check_input_offset = 0x69B00;
-
 __uint64_t check_input_address = NULL;
 __uint64_t page_number = NULL;
 __uint8_t *original_instructions = nullptr;
@@ -50,63 +45,19 @@ void __attribute__((naked)) trampoline_function()
     );
 }           
 
-void inject_detour_instructions(void *hook_location, __uint8_t *hook_instruction) 
-{
-    std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log");
-
-     original_instructions = new __uint8_t[AC_detour::hook_instruction_length];
-
-    std::memcpy(original_instructions, hook_location, AC_detour::hook_instruction_length);
-
-    if (mprotect((void*)page_number, AC_detour::page_size, PROT_READ | PROT_WRITE | PROT_EXEC) != 0)
-    {
-        perror("mprotect error");
-        return; 
-    }
-    outFile << std::hex << original_instructions << std::hex << std::endl << hook_location << std::endl;
-    std::memcpy(hook_location, hook_instruction, AC_detour::hook_instruction_length);  // hook
-
-    mprotect((void*)page_number, AC_detour::page_size, PROT_READ | PROT_EXEC);
-    outFile.close();
-}
-
-__uint8_t *formulate_detour_instructions() {
-    
-    __uint64_t trampoline_function_address = (__uint64_t)&trampoline_function;
-    __uint8_t* hook_instruction = new __uint8_t[AC_detour::hook_instruction_length];
-    
-    hook_instruction[0] = 0x48;
-    hook_instruction[1] = 0xBA;
-    std::memcpy(hook_instruction+2, &trampoline_function_address, sizeof(trampoline_function_address));
-    hook_instruction[10] = 0xFF;
-    hook_instruction[11] = 0xE2;
-    
-    for (int i = 12; i < AC_detour::hook_instruction_length; i++) {
-        hook_instruction[i] = 0x90;
-    }
-
-    return hook_instruction;
-}
-
-void execute_hook()
-{
-    AC_detour detour;
-    std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log");
-    page_number = detour.find_target_page();
-    check_input_address = page_number + AC_detour::check_input_offset;
-    __uint8_t *hook_instruction = formulate_detour_instructions();
-    void *hook_location = (void*)(check_input_address+AC_detour::injection_offset);
-    
-    outFile << "injecting instructions" << std::endl;
-    inject_detour_instructions(hook_location, hook_instruction);
-    outFile.close();
-}
-
 void __attribute__((constructor)) init()
 {
     std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log");
 
-    execute_hook();
+    AC_detour detour((__uint64_t)&trampoline_function);
+    
+    check_input_address = detour.check_input_address;
+    page_number = detour.page_number;
+
+    detour.formulate_detour_instructions();
+    detour.inject_detour_instructions();
+    
+    original_instructions = detour.original_instructions;
 
     outFile << "successfully hooked";
     outFile.close();
@@ -115,7 +66,7 @@ void __attribute__((constructor)) init()
 void __attribute__((destructor)) unload()
 {
     std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log");
-
+    outFile << page_number << std::endl << original_instructions << std::endl << check_input_address << std::endl;
     mprotect((void*)page_number, AC_detour::page_size, PROT_READ | PROT_WRITE | PROT_EXEC);
 
     std::memcpy((void*)(check_input_address+AC_detour::injection_offset), (void*)original_instructions, AC_detour::hook_instruction_length);
