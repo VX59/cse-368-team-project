@@ -1,6 +1,6 @@
 #include "ac_detour.h"
 
-__uint64_t AC_detour::find_target_page() {
+void AC_detour::find_target_page() {
     std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log");
     // get proc mappings
     pid_t pid = getpid();
@@ -31,7 +31,6 @@ __uint64_t AC_detour::find_target_page() {
 
     page_number = static_cast<__uint64_t>(std::strtoull(page_substr.c_str(),nullptr, 16));
     check_input_address = page_number + check_input_offset;
-    return check_input_address;
 }
 
 void AC_detour::formulate_detour_instructions() {

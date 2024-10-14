@@ -14,10 +14,10 @@ private:
     __uint8_t *hook_instruction;
     void *hook_location;
 
-    __uint64_t find_target_page();
+    void find_target_page();
     void formulate_detour_instructions();
     void inject_detour_instructions();
-    
+
 public:
     static const __uint64_t injection_offset = 17;
     static const __uint8_t hook_instruction_length = 17;
