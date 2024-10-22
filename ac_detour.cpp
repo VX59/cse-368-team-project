@@ -52,11 +52,12 @@ void AC_detour::inject_detour_instructions()
 {
     std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log");
 
-     original_instructions = new __uint8_t[AC_detour::hook_instruction_length];
+    original_instructions = new __uint8_t[AC_detour::hook_instruction_length];
+    hook_location = (void*)(check_input_address+injection_offset);
 
     std::memcpy(original_instructions, hook_location, AC_detour::hook_instruction_length);
 
-    if (mprotect((void*)page_number, AC_detour::page_size, PROT_READ | PROT_WRITE | PROT_EXEC) != 0)
+    if (mprotect((void*)page_number, AC_detour::target_page_size, PROT_READ | PROT_WRITE | PROT_EXEC) != 0)
     {
         perror("mprotect error");
         return; 
@@ -64,7 +65,7 @@ void AC_detour::inject_detour_instructions()
     outFile << std::hex << original_instructions << std::hex << std::endl << hook_location << std::endl;
     std::memcpy(hook_location, hook_instruction, AC_detour::hook_instruction_length);  // hook
 
-    mprotect((void*)page_number, AC_detour::page_size, PROT_READ | PROT_EXEC);
+    mprotect((void*)page_number, AC_detour::target_page_size, PROT_READ | PROT_EXEC);
     outFile.close();
 }
 
@@ -73,8 +74,5 @@ AC_detour::AC_detour(__uint64_t trampoline_function_addr)
     trampoline_function_address = trampoline_function_addr;
     find_target_page();
     formulate_detour_instructions();
-    hook_location = (void*)(check_input_address+injection_offset);
-
     inject_detour_instructions();
-
 }
