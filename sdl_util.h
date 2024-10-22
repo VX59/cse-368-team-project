@@ -1,12 +1,5 @@
 #include <unistd.h>
 
-struct hook_util {
-    __uint64_t check_input_address;
-    __uint64_t page_number;
-    __uint8_t *original_instructions;
-    void *handle;
-} (hook_util);
-
 typedef struct SDL_Keysym
 {
     __uint8_t scancode;      /**< SDL physical key code - see ::SDL_Scancode for details */
