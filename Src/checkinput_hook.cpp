@@ -12,7 +12,7 @@ struct Hook_Util
     void *handle;
     Environment_Interaction *interface;
 
-}(hook_util);
+}hook_util;
 
 // super evil code >:) .. manipulates the internal event queue
 void hook_function() {
