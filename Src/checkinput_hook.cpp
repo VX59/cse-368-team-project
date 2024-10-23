@@ -14,7 +14,7 @@ struct Hook_Util
 
 }(hook_util);
 
-// super evil code >:) ... force forwards movement .. pushes to the internal event queue
+// super evil code >:) .. manipulates the internal event queue
 void hook_function() {
     std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log");
 
