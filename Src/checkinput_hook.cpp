@@ -16,7 +16,7 @@ struct Hook_Util
 
 // super evil code >:) .. manipulates the internal event queue
 void hook_function() {
-    std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log");
+    std::ofstream outFile("./ac_detour.log");
 
     int result = hook_util.interface->Mouse_Button_Event();
 
@@ -57,7 +57,7 @@ void __attribute__((naked)) trampoline_function()
 
 void __attribute__((constructor)) init()
 {
-    std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log");
+    std::ofstream outFile("./ac_detour.log");
 
     hook_util.handle = dlopen("native_client", RTLD_LAZY | RTLD_NOLOAD);
 
@@ -81,7 +81,7 @@ void __attribute__((constructor)) init()
 
 void __attribute__((destructor)) unload()
 {
-    std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log");
+    std::ofstream outFile("./ac_detour.log");
     //dlclose(hook_util.handle);
     mprotect((void*)hook_util.page_number, AC_detour::target_page_size, PROT_READ | PROT_WRITE | PROT_EXEC);
     std::memcpy((void*)(hook_util.check_input_address+AC_detour::injection_offset), (void*)hook_util.original_instructions, AC_detour::hook_instruction_length);
