@@ -27,10 +27,10 @@ typedef struct SDL_MouseMotionEvent
     __uint32_t windowID;    /**< The window with mouse focus, if any */
     __uint32_t which;       /**< The mouse instance id, or SDL_TOUCH_MOUSEID */
     __uint32_t state;       /**< The current button state */
-    __uint32_t x;           /**< X coordinate, relative to window */
-    __uint32_t y;           /**< Y coordinate, relative to window */
-    __uint32_t xrel;        /**< The relative motion in the X direction */
-    __uint32_t yrel;        /**< The relative motion in the Y direction */
+    int x;           /**< X coordinate, relative to window */
+    int y;           /**< Y coordinate, relative to window */
+    int xrel;        /**< The relative motion in the X direction */
+    int yrel;        /**< The relative motion in the Y direction */
 } SDL_MouseMotionEvent;
 
 typedef struct SDL_MouseButtonEvent
@@ -43,8 +43,8 @@ typedef struct SDL_MouseButtonEvent
     __uint8_t state;        /**< ::SDL_PRESSED or ::SDL_RELEASED */
     __uint8_t clicks;       /**< 1 for single-click, 2 for double-click, etc. */
     __uint8_t padding1;
-    __uint32_t x;           /**< X coordinate, relative to window */
-    __uint32_t y;           /**< Y coordinate, relative to window */
+    int x;           /**< X coordinate, relative to window */
+    int y;           /**< Y coordinate, relative to window */
 } SDL_MouseButtonEvent;
 
 typedef union SDL_Event
@@ -56,3 +56,29 @@ typedef union SDL_Event
     __uint8_t padding[56];
 
 } SDL_Event;
+
+struct SDL
+{
+    int scancode_offset = 93;
+    __uint8_t SDL_PRESSED = 1;
+    __uint32_t SDL_KEYDOWN = 0x300;
+    __uint32_t SDL_MOUSEMOTION = 0x400;
+    __uint32_t SDL_MOUSEBUTTONDOWN = 0x401;
+    __uint32_t SDL_BUTTON_LEFT = 1;
+    __uint32_t SDL_TOUCH_MOUSEID = ((__uint32_t)-1);
+
+    __uint32_t KMOD_NONE = 0x0000;
+
+    int (*SDL_PushEvent)(SDL_Event*);
+    __uint32_t (*SDL_GetMouseState)(int *x, int *y);
+};
+
+struct SDL_keys
+{
+    __uint32_t SDLK_w = 0x0077;
+    __uint32_t SDLK_s = 0x0073;
+    __uint32_t SDLK_a = 0x0061;
+    __uint32_t SDLK_d = 0x0064;
+    __uint32_t SDLK_r = 0x0072;
+    __uint32_t SDLK_q = 0x0071;
+};
