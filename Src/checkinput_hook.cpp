@@ -1,6 +1,14 @@
 #include "ac_detour.h"
 #include "Environment_Interaction.h"
 #include <dlfcn.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+struct Data_Link
+{
+    __uint8_t *GameState[64]; // placeholders
+    __uint8_t *GameAction[64];
+};  
 
 SDL_keys sdl_keys;
 
@@ -13,6 +21,7 @@ struct Hook_Util
     Environment_Interaction *interface;
 
 }hook_util;
+
 
 // super evil code >:) .. manipulates the internal event queue
 void hook_function() {
@@ -34,7 +43,7 @@ void __attribute__((naked)) trampoline_function()
     // execute stolen instructions
     __asm__(
         "mov %fs:0x28,%rax;"
-        "mov %rax,0x1a0(%rsp);"
+        "mov %rax,0x1a0(%rsp);" 
     );
 
     __uint64_t hook_function_address = (__uint64_t)&hook_function;
@@ -60,6 +69,8 @@ void __attribute__((constructor)) init()
     std::ofstream outFile("./ac_detour.log");
 
     hook_util.handle = dlopen("native_client", RTLD_LAZY | RTLD_NOLOAD);
+    
+    int shm_fd = shm_open("/ac_data_link", O_CREAT | O_RDWR, 0666);
 
     void *sdl_pushevent_address = dlsym(hook_util.handle, "SDL_PushEvent");
     void *sdl_getmousestate_address = dlsym(hook_util.handle, "SDL_GetMouseState");
