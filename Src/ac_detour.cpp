@@ -1,5 +1,8 @@
 #include "ac_detour.h"
 
+__uint64_t AC_detour::injection_offset = 17;
+__uint8_t AC_detour::hook_instruction_length = 17;
+
 void AC_detour::find_target_page() {
     pid_t pid = getpid();
     std::ostringstream mapping;
@@ -50,17 +53,24 @@ void AC_detour::formulate_detour_instructions() {
 
 void AC_detour::inject_detour_instructions() 
 {
-    original_instructions = new __uint8_t[AC_detour::hook_instruction_length];
+    original_instructions = mmap(nullptr, AC_detour::hook_instruction_length+2, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (original_instructions == MAP_FAILED) {
+        perror("mmap error");
+        return;
+    }
     hook_location = (void*)(check_input_address+injection_offset);
 
     std::memcpy(original_instructions, hook_location, AC_detour::hook_instruction_length);
+    // JMP RDX
+    reinterpret_cast<__uint8_t*>(original_instructions)[AC_detour::hook_instruction_length] = 0xFF;
+    reinterpret_cast<__uint8_t*>(original_instructions)[AC_detour::hook_instruction_length+1] = 0xE2;
 
     if (mprotect((void*)page_number, AC_detour::target_page_size, PROT_READ | PROT_WRITE | PROT_EXEC) != 0)
     {
         perror("mprotect error");
         return; 
     }
-    std::memcpy(hook_location, hook_instruction, AC_detour::hook_instruction_length);  // hook
+    std::memcpy(hook_location, hook_instruction, AC_detour::hook_instruction_length); // hook
 
     mprotect((void*)page_number, AC_detour::target_page_size, PROT_READ | PROT_EXEC);
 }
