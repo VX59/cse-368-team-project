@@ -24,7 +24,7 @@ void AC_detour::find_target_page() {
     std::string page_substr = line.substr(0,12);    
 
     page_number = static_cast<__uint64_t>(std::strtoull(page_substr.c_str(),nullptr, 16));
-    check_input_address = page_number + check_input_offset;
+    victim_address = page_number + check_input_offset;
 }
 
 void AC_detour::formulate_detour_instructions() {
@@ -51,7 +51,7 @@ void AC_detour::formulate_detour_instructions() {
 void AC_detour::inject_detour_instructions() 
 {
     original_instructions = new __uint8_t[AC_detour::hook_instruction_length];
-    hook_location = (void*)(check_input_address+injection_offset);
+    hook_location = (void*)(victim_address+injection_offset);
 
     std::memcpy(original_instructions, hook_location, AC_detour::hook_instruction_length);
 
