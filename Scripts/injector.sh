@@ -52,7 +52,7 @@ unload() {
 
 if [ "$#" -gt 0 ]; then
     LIB_HANDLE=$(gdb -n --batch -ex "attach $PROCID" \
-                                -ex "set \$detour_handler = dlopen(\"$LIB_PATH\", 1)" \
+                                -ex "set \$detour_handler = (void *(*) (const char*, int))dlopen(\"$LIB_PATH\", 1)" \
                                 -ex "print/x \$detour_handler" \
                                 -ex "source injector_gdb_setup.py" | grep -oP '\$1 = \K0x[0-9a-f]+')
 
@@ -65,7 +65,7 @@ if [ "$#" -gt 0 ]; then
 else
     trap unload SIGINT
     LIB_HANDLE=$(gdb -n --batch -ex "attach $PROCID" \
-                                -ex "set \$detour_handler = dlopen(\"$LIB_PATH\", 1)" \
+                                -ex "set \$detour_handler = (void *(*) (const char*, int))dlopen(\"$LIB_PATH\", 1)" \
                                 -ex "print/x \$detour_handler" \
                                 -ex "source injector_gdb_setup.py" \
                                 -ex "call init()" \
