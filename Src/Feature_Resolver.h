@@ -34,6 +34,7 @@ struct entity
         __uint32_t z = 0x34;
         __uint32_t yaw = 0x38;
         __uint32_t pitch = 0x3c;
+        __uint32_t roll = 0x40;
     }rel_offsets;
 
     __uint64_t base_address;
@@ -74,6 +75,7 @@ struct dynamic_ent : entity
     float z;
     float yaw;
     float pitch;
+    float roll;
 
     dynamic_ent(__uint64_t base) : entity(base) { };
 
@@ -91,6 +93,7 @@ struct dynamic_ent : entity
         z = *(float*)(base_address + rel_offsets.z);
         yaw = *(float*)(base_address + rel_offsets.yaw);
         pitch = *(float*)(base_address + rel_offsets.pitch);
+        roll = *(float*)(base_address + rel_offsets.roll);
     }
 };
 
@@ -114,7 +117,7 @@ public:
     void Resolve_Dynamic_Entities();
     void Resolve_Static_Entities();
     // traces rays from player1
-    void Ray_Trace(float yaw_offset, float pitch_offset);
+    void TN_Ray_Trace();
 
     Feature_Resolver(dynamic_ent *p, Features *f)
     {

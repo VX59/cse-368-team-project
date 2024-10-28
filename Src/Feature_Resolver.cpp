@@ -27,8 +27,9 @@ void Feature_Resolver::Resolve_Static_Entities()
     }
 }
 
-// this can be adapted to test visibility of other entities in the game
-void Feature_Resolver::Ray_Trace(float yaw_offset, float pitch_offset)
+// calculate tangent and normal collision vectors relative to the camera direction
+// there are technically 3 but we will make 5
+void Feature_Resolver::TN_Ray_Trace()
 {
      // trace rays from the players head .. this is supposed to be for ac bots
     vec from;
@@ -39,17 +40,40 @@ void Feature_Resolver::Ray_Trace(float yaw_offset, float pitch_offset)
     from.z = this->features->player1->z+5.5; // player height ,, we can reverse camera1 but this is the same for now
     
     vec to;
-    float yaw = (this->features->player1->yaw-90+yaw_offset) * (M_PI/180.0f);
-    float pitch = (this->features->player1->pitch+pitch_offset) * (M_PI/180.0f);
+    float yaw = (this->features->player1->yaw-90) * (M_PI/180.f);
+    float pitch = (this->features->player1->pitch) * (M_PI/180.f);
+    float roll = (this->features->player1->roll) * (M_PI/180.f);
 
     // calculate 100 cube ray
     float limit = 100;
-    to.x = from.x + (float)(cos(yaw)*cos(pitch))*limit;
-    to.y = from.y + (float)(sin(yaw)*cos(pitch))*limit;
-    to.z = from.z + (float)(sin(pitch))*limit;
-    
-    int ray_index = yaw_offset/90;
-    traceresult_s *tr = &(this->features->rays[ray_index]);
 
+    // forwards
+    to.x = from.x + (cos(yaw) * cos(pitch) * cos(roll) - sin(yaw) * sin(roll)) * limit;
+    to.y = from.y + (sin(yaw) * cos(pitch) * cos(roll) + cos(yaw) * sin(roll)) * limit;
+    to.z = from.z + (sin(pitch) * cos(roll)) * limit;
+    traceresult_s *tr = &(this->features->rays[0]);
     this->TraceLine(from, to, this->features->player1->base_address, true, tr);
+
+    // right
+    to.x = from.x + (sin(yaw) * cos(pitch) * cos(roll) + cos(yaw) * sin(roll)) * limit;
+    to.y = from.y + (cos(yaw) * cos(pitch) * cos(roll) - sin(yaw) * sin(roll)) * limit;
+    to.z = from.z + (sin(pitch) * cos(roll)) * limit;
+    tr = &(this->features->rays[1]);
+    this->TraceLine(from, to, this->features->player1->base_address, true, tr);
+    
+    // backwards
+    to.x = from.x + -((cos(yaw) * cos(pitch) * cos(roll) - sin(yaw) * sin(roll)) * limit);
+    to.y = from.y + -((sin(yaw) * cos(pitch) * cos(roll) + cos(yaw) * sin(roll)) * limit);
+    to.z = from.z + -((sin(pitch) * cos(roll)) * limit);
+    tr = &(this->features->rays[2]);
+    this->TraceLine(from, to, this->features->player1->base_address, true, tr);
+
+    // left
+
+    to.x = from.x + -((sin(yaw) * cos(pitch) * cos(roll) + cos(yaw) * sin(roll)) * limit);
+    to.y = from.y + -((cos(yaw) * cos(pitch) * cos(roll) - sin(yaw) * sin(roll)) * limit);
+    to.z = from.z + (sin(pitch) * cos(roll)) * limit;
+    tr = &(this->features->rays[3]);
+    this->TraceLine(from, to, this->features->player1->base_address, true, tr);
+
 }

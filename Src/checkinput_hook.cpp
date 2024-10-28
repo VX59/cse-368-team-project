@@ -47,26 +47,26 @@ void hook_function() {
     hook_util.resolver->Resolve_Dynamic_Entities();
     hook_util.resolver->Resolve_Static_Entities();
 
-    hook_util.resolver->Ray_Trace(0,0);
-    hook_util.resolver->Ray_Trace(90,0);
-    hook_util.resolver->Ray_Trace(180,0);
-    hook_util.resolver->Ray_Trace(270,0);
+    hook_util.resolver->TN_Ray_Trace();
+
     ///////////////// end update
 
-    // calculate the distance of the forwards ray
+    // calculate the distance of the rays
     float distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[0].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[0].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[0].end.z,2));
     outFile << "forwards: " << distance << std::endl;
     outFile << features.rays[0].collided << " " << features.rays[0].end.x << " " << features.rays[0].end.y << " " << features.rays[0].end.z << std::endl;
+    
     distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[1].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[1].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[1].end.z,2));
     outFile << "right: " << distance << std::endl;
     outFile << features.rays[1].collided << " " << features.rays[1].end.x << " " << features.rays[1].end.y << " " << features.rays[1].end.z << std::endl;
+    
     distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[2].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[2].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[2].end.z,2));
     outFile << "back: " << distance << std::endl;
     outFile << features.rays[2].collided << " " << features.rays[2].end.x << " " << features.rays[2].end.y << " " << features.rays[2].end.z << std::endl;
+    
     distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[3].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[3].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[3].end.z,2));
     outFile << "left: " << distance << std::endl;
     outFile << features.rays[3].collided << " " << features.rays[3].end.x << " " << features.rays[3].end.y << " " << features.rays[3].end.z << std::endl;
-    
 
     // wait for response
     // read actions from shared memory
