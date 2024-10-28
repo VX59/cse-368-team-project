@@ -24,7 +24,7 @@ void AC_detour::find_target_page() {
     std::string page_substr = line.substr(0,12);    
 
     page_number = static_cast<__uint64_t>(std::strtoull(page_substr.c_str(),nullptr, 16));
-    victim_address = page_number + check_input_offset;
+    victim_address = page_number + victim_offset;
 }
 
 void AC_detour::formulate_detour_instructions() {
@@ -65,8 +65,9 @@ void AC_detour::inject_detour_instructions()
     mprotect((void*)page_number, AC_detour::target_page_size, PROT_READ | PROT_EXEC);
 }
 
-AC_detour::AC_detour(__uint64_t trampoline_function_addr)
+AC_detour::AC_detour(__uint64_t vict_offset, __uint64_t trampoline_function_addr)
 {
+    victim_offset = vict_offset;
     trampoline_function_address = trampoline_function_addr;
     find_target_page();
     formulate_detour_instructions();

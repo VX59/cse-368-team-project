@@ -1,8 +1,0 @@
-proc mapping path /proc/11737/maps
-file is open
-5de210080000-5de2101bd000 r-xp 00011000 fe:02 17711170                   /home/jacob/AC/bin_unix/native_client
-health0x5de22f1f54e0
-player health 3e8
-player armor 600000000
-player rile ammo 14
-player grenades 140000
