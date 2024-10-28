@@ -15,16 +15,16 @@ struct Data_Link
     __uint8_t *GameAction[64];
 };
 
-struct function_offsets
+struct
 {
     __uint64_t checkinput = 0x69B00;
     __uint64_t raycube = 0x79970;
     __uint64_t TraceLine = 0x12c8d0;
     __uint64_t _setskin = 0x2e5f0;
     __uint64_t particle_trail = 0xabcf0;
-}offsets;
+}function_offsets;
 
-struct Hook_Util
+struct
 {
     __uint64_t victim_address;
     __uint64_t page_number;
@@ -40,14 +40,39 @@ struct Hook_Util
 void hook_function() {
     std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log");
     
+
+    // resolve the gamestate, write to shared memory
+
+    //////////////// updating critical section
+    hook_util.resolver->Resolve_Dynamic_Entities();
+    hook_util.resolver->Resolve_Static_Entities();
+
     hook_util.resolver->Ray_Trace(0,0);
-    
+    hook_util.resolver->Ray_Trace(90,0);
+    hook_util.resolver->Ray_Trace(180,0);
+    hook_util.resolver->Ray_Trace(270,0);
+    ///////////////// end update
+
     // calculate the distance of the forwards ray
-    float distance = sqrt(pow(hook_util.resolver->player1->x-features.rays[0].end.x,2)+pow(hook_util.resolver->player1->y-features.rays[0].end.y,2)+pow(hook_util.resolver->player1->z+5.5-features.rays[0].end.z,2));
-    outFile << "distance: " << distance << std::endl;
+    float distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[0].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[0].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[0].end.z,2));
+    outFile << "forwards: " << distance << std::endl;
     outFile << features.rays[0].collided << " " << features.rays[0].end.x << " " << features.rays[0].end.y << " " << features.rays[0].end.z << std::endl;
+    distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[1].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[1].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[1].end.z,2));
+    outFile << "right: " << distance << std::endl;
+    outFile << features.rays[1].collided << " " << features.rays[1].end.x << " " << features.rays[1].end.y << " " << features.rays[1].end.z << std::endl;
+    distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[2].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[2].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[2].end.z,2));
+    outFile << "back: " << distance << std::endl;
+    outFile << features.rays[2].collided << " " << features.rays[2].end.x << " " << features.rays[2].end.y << " " << features.rays[2].end.z << std::endl;
+    distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[3].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[3].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[3].end.z,2));
+    outFile << "left: " << distance << std::endl;
+    outFile << features.rays[3].collided << " " << features.rays[3].end.x << " " << features.rays[3].end.y << " " << features.rays[3].end.z << std::endl;
     
+
+    // wait for response
+    // read actions from shared memory
+
     // manipulate event queue
+
     // int result = hook_util.interface->Mouse_Button_Event();
 
     // outFile << result << std::endl;
@@ -89,35 +114,40 @@ void __attribute__((constructor)) init()
 {
     std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log");
 
+    // load some sdl library functions from inside ac
     hook_util.handle = dlopen("native_client", RTLD_LAZY | RTLD_NOLOAD);
     outFile << std::hex << hook_util.handle << std::endl;
     void *sdl_pushevent_address = dlsym(hook_util.handle, "SDL_PushEvent");
     void *sdl_getmousestate_address = dlsym(hook_util.handle, "SDL_GetMouseState");
     
+    // establish the interaction api
     hook_util.interface = new Environment_Interaction;
     hook_util.interface->sdl_util.SDL_PushEvent = (int (*)(SDL_Event*))sdl_pushevent_address;
     hook_util.interface->sdl_util.SDL_GetMouseState = (__uint32_t (*)(int *x, int *y))sdl_getmousestate_address;
 
-    AC_detour detour(offsets.checkinput, (__uint64_t)&trampoline_function);
+    // initiate hook
+    AC_detour detour(function_offsets.checkinput, (__uint64_t)&trampoline_function);
 
     hook_util.victim_address = detour.victim_address;
     hook_util.page_number = detour.page_number;
     hook_util.original_instructions = detour.original_instructions;
+  
+    outFile << "successfully hooked";
 
-
-    __uint64_t set_skin = hook_util.page_number + offsets._setskin;
+    // locate player1
+    __uint64_t set_skin = hook_util.page_number + function_offsets._setskin;
     
     __uint32_t player_ip_offset = *(__uint32_t*)(set_skin + 0x6);
     __uint64_t player_base_address = *(__uint64_t*)(set_skin + 0xa + player_ip_offset);
     
-    player_ent *player1 = new player_ent(player_base_address);
+    dynamic_ent *player1 = new dynamic_ent(player_base_address);
 
-    // the resolver should end up modifying the shared memory just it to the datalink features when we alloate it
+    // establish the feature resolver and grab some functions from the game
     hook_util.resolver = new Feature_Resolver(player1, &features);
-    __uint64_t TraceLine_address = hook_util.page_number + offsets.TraceLine;
+    
+    __uint64_t TraceLine_address = hook_util.page_number + function_offsets.TraceLine;
     outFile << TraceLine_address << std::endl;
     hook_util.resolver->TraceLine = (void (*)(vec from, vec to, __uint64_t pTracer, bool CheckPlayers, traceresult_s *tr))TraceLine_address;
-    outFile << "successfully hooked";
 
     outFile.close();
 }
