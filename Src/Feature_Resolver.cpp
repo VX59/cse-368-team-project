@@ -43,14 +43,22 @@ void Feature_Resolver::TNB_Ray_Trace()
     vec to;
     double yaw = (this->features->player1->yaw-90) * (M_PI/180.f);
     double pitch = (this->features->player1->pitch) * (M_PI/180.f);
-
+    float epsilon = 0.15;
     // calculate 100 cube ray
     float limit = 100.f;
 
-    // forwards
-    to.x = from.x + (cos(yaw) * cos(pitch)) * limit;
-    to.y = from.y + (sin(yaw) * cos(pitch)) * limit;
-    to.z = from.z + sin(pitch) * limit;
+    if (M_PI_2 - fabs(pitch) <= epsilon)
+    {
+        to.x = from.x;
+        to.y = from.y;
+        to.z = from.z + sin(pitch)*limit;        
+    } else 
+    {
+        to.x = from.x + (cos(yaw) * cos(pitch)) * limit;
+        to.y = from.y + (sin(yaw) * cos(pitch)) * limit;
+        to.z = from.z + sin(pitch) * limit;
+    }
+
     traceresult_s *tr = &(this->features->rays[0]);
     this->TraceLine(from, to, this->features->player1->base_address, true, tr);
     // right
@@ -61,9 +69,17 @@ void Feature_Resolver::TNB_Ray_Trace()
     this->TraceLine(from, to, this->features->player1->base_address, true, tr);
 
     // back
-    to.x = from.x -(cos(yaw) * cos(pitch)) * limit;
-    to.y = from.y -(sin(yaw) * cos(pitch)) * limit;
-    to.z = from.z -sin(pitch) * limit;
+    if (M_PI_2 - fabs(pitch) <= epsilon)
+    {
+        to.x = from.x;
+        to.y = from.y;
+        to.z = from.z - sin(pitch)*limit;        
+    } else 
+    {
+        to.x = from.x - (cos(yaw) * cos(pitch)) * limit;
+        to.y = from.y - (sin(yaw) * cos(pitch)) * limit;
+        to.z = from.z - sin(pitch) * limit;
+    }
     tr = &(this->features->rays[2]);
     this->TraceLine(from, to, this->features->player1->base_address, true, tr);
 
@@ -75,16 +91,17 @@ void Feature_Resolver::TNB_Ray_Trace()
     this->TraceLine(from, to, this->features->player1->base_address, true, tr);
 
     // up
-    to.x = from.x + (cos(pitch+M_PI_2)) * limit;
-    to.y = from.y + (cos(pitch+M_PI_2)) * limit;
-    to.z = from.z + sin(pitch+M_PI_2) * limit;
+
+    to.x = from.x;
+    to.y = from.y;
+    to.z = from.z + limit;        
     tr = &(this->features->rays[4]);
     this->TraceLine(from, to, this->features->player1->base_address, true, tr);
 
     // down
-    to.x = from.x - (cos(pitch+M_PI_2)) * limit;
-    to.y = from.y - (cos(pitch+M_PI_2)) * limit;
-    to.z = from.z - sin(pitch+M_PI_2) * limit;
+    to.x = from.x;
+    to.y = from.y;
+    to.z = from.z - limit;    
     tr = &(this->features->rays[5]);
     this->TraceLine(from, to, this->features->player1->base_address, true, tr);
 }
