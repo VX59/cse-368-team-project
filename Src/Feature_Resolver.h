@@ -100,7 +100,7 @@ struct dynamic_ent : entity
 // this is the gamestate we share with the reinforcement learning environment
 struct Features
 {
-    traceresult_s rays[4];
+    traceresult_s rays[6];
     dynamic_ent *player1;
     std::vector<dynamic_ent*> dynamic_entities;
     std::vector<static_ent*> static_entities;
@@ -117,7 +117,7 @@ public:
     void Resolve_Dynamic_Entities();
     void Resolve_Static_Entities();
     // traces rays from player1
-    void TN_Ray_Trace();
+    void TNB_Ray_Trace();
 
     Feature_Resolver(dynamic_ent *p, Features *f)
     {

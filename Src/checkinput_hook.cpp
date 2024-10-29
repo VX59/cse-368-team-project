@@ -17,7 +17,7 @@ struct Data_Link
 
 struct
 {
-    __uint64_t checkinput = 0x69B00;
+    __uint64_t checkinput = 0x69b00;
     __uint64_t raycube = 0x79970;
     __uint64_t TraceLine = 0x12c8d0;
     __uint64_t _setskin = 0x2e5f0;
@@ -47,9 +47,12 @@ void hook_function() {
     hook_util.resolver->Resolve_Dynamic_Entities();
     hook_util.resolver->Resolve_Static_Entities();
 
-    hook_util.resolver->TN_Ray_Trace();
+    hook_util.resolver->TNB_Ray_Trace();
 
     ///////////////// end update
+
+    outFile << "yaw: " << hook_util.resolver->features->player1->yaw << " pitch: " << hook_util.resolver->features->player1->pitch << std::endl;
+    outFile << "x: " << hook_util.resolver->features->player1->x << "y: " << hook_util.resolver->features->player1->y << "z: " << hook_util.resolver->features->player1->z << std::endl;
 
     // calculate the distance of the rays
     float distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[0].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[0].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[0].end.z,2));
@@ -67,6 +70,14 @@ void hook_function() {
     distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[3].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[3].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[3].end.z,2));
     outFile << "left: " << distance << std::endl;
     outFile << features.rays[3].collided << " " << features.rays[3].end.x << " " << features.rays[3].end.y << " " << features.rays[3].end.z << std::endl;
+
+    distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[4].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[4].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[4].end.z,2));
+    outFile << "up: " << distance << std::endl;
+    outFile << features.rays[4].collided << " " << features.rays[4].end.x << " " << features.rays[4].end.y << " " << features.rays[4].end.z << std::endl;
+    
+    distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[5].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[5].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[5].end.z,2));
+    outFile << "down: " << distance << std::endl;
+    outFile << features.rays[5].collided << " " << features.rays[5].end.x << " " << features.rays[5].end.y << " " << features.rays[5].end.z << std::endl;
 
     // wait for response
     // read actions from shared memory
