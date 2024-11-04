@@ -21,7 +21,8 @@ struct
     __uint64_t raycube = 0x79970;
     __uint64_t TraceLine = 0x12c8d0;
     __uint64_t _setskin = 0x2e5f0;
-    __uint64_t particle_trail = 0xabcf0;
+    __uint64_t calcteamscores = 0xb1930;
+    __uint64_t mapmodelslotusage = 0x957b0;
 }function_offsets;
 
 struct
@@ -44,40 +45,52 @@ void hook_function() {
     // resolve the gamestate, write to shared memory
 
     //////////////// updating critical section
+    outFile << "resolving players" << std::endl;
     hook_util.resolver->Resolve_Dynamic_Entities();
+    for (dynamic_ent *e : *features.dynamic_entities)
+    {
+        outFile << e->x << e->y << e->z << std::endl;
+    }
+
+    outFile << "resolving ents" << std::endl;
     hook_util.resolver->Resolve_Static_Entities();
+    for (static_ent *e : *features.static_entities)
+    {
+        float distance = sqrt(pow(features.player1->x-e->trace->end.x,2)+pow(features.player1->y-e->trace->end.y,2)+pow(features.player1->z-e->trace->end.z,2));
+        outFile << e->trace->collided << " distance: " << distance << " " << e->type << std::endl;
+    }
 
     hook_util.resolver->TNB_Ray_Trace();
 
     ///////////////// end update
 
-    outFile << "yaw: " << hook_util.resolver->features->player1->yaw << " pitch: " << hook_util.resolver->features->player1->pitch << std::endl;
-    outFile << "x: " << hook_util.resolver->features->player1->x << "y: " << hook_util.resolver->features->player1->y << "z: " << hook_util.resolver->features->player1->z << std::endl;
+    // outFile << "yaw: " << hook_util.resolver->features->player1->yaw << " pitch: " << hook_util.resolver->features->player1->pitch << std::endl;
+    // outFile << "x: " << hook_util.resolver->features->player1->x << "y: " << hook_util.resolver->features->player1->y << "z: " << hook_util.resolver->features->player1->z << std::endl;
 
-    // calculate the distance of the rays
-    float distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[0].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[0].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[0].end.z,2));
-    outFile << "forwards: " << distance << std::endl;
-    outFile << features.rays[0].collided << " " << features.rays[0].end.x << " " << features.rays[0].end.y << " " << features.rays[0].end.z << std::endl;
+    // // calculate the distance of the rays
+    // float distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[0].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[0].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[0].end.z,2));
+    // outFile << "forwards: " << distance << std::endl;
+    // outFile << features.rays[0].collided << " " << features.rays[0].end.x << " " << features.rays[0].end.y << " " << features.rays[0].end.z << std::endl;
     
-    distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[1].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[1].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[1].end.z,2));
-    outFile << "right: " << distance << std::endl;
-    outFile << features.rays[1].collided << " " << features.rays[1].end.x << " " << features.rays[1].end.y << " " << features.rays[1].end.z << std::endl;
+    // distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[1].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[1].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[1].end.z,2));
+    // outFile << "right: " << distance << std::endl;
+    // outFile << features.rays[1].collided << " " << features.rays[1].end.x << " " << features.rays[1].end.y << " " << features.rays[1].end.z << std::endl;
     
-    distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[2].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[2].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[2].end.z,2));
-    outFile << "back: " << distance << std::endl;
-    outFile << features.rays[2].collided << " " << features.rays[2].end.x << " " << features.rays[2].end.y << " " << features.rays[2].end.z << std::endl;
+    // distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[2].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[2].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[2].end.z,2));
+    // outFile << "back: " << distance << std::endl;
+    // outFile << features.rays[2].collided << " " << features.rays[2].end.x << " " << features.rays[2].end.y << " " << features.rays[2].end.z << std::endl;
     
-    distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[3].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[3].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[3].end.z,2));
-    outFile << "left: " << distance << std::endl;
-    outFile << features.rays[3].collided << " " << features.rays[3].end.x << " " << features.rays[3].end.y << " " << features.rays[3].end.z << std::endl;
+    // distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[3].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[3].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[3].end.z,2));
+    // outFile << "left: " << distance << std::endl;
+    // outFile << features.rays[3].collided << " " << features.rays[3].end.x << " " << features.rays[3].end.y << " " << features.rays[3].end.z << std::endl;
 
-    distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[4].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[4].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[4].end.z,2));
-    outFile << "up: " << distance << std::endl;
-    outFile << features.rays[4].collided << " " << features.rays[4].end.x << " " << features.rays[4].end.y << " " << features.rays[4].end.z << std::endl;
+    // distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[4].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[4].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[4].end.z,2));
+    // outFile << "up: " << distance << std::endl;
+    // outFile << features.rays[4].collided << " " << features.rays[4].end.x << " " << features.rays[4].end.y << " " << features.rays[4].end.z << std::endl;
     
-    distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[5].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[5].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[5].end.z,2));
-    outFile << "down: " << distance << std::endl;
-    outFile << features.rays[5].collided << " " << features.rays[5].end.x << " " << features.rays[5].end.y << " " << features.rays[5].end.z << std::endl;
+    // distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[5].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[5].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[5].end.z,2));
+    // outFile << "down: " << distance << std::endl;
+    // outFile << features.rays[5].collided << " " << features.rays[5].end.x << " " << features.rays[5].end.y << " " << features.rays[5].end.z << std::endl;
 
     // wait for response
     // read actions from shared memory
@@ -143,19 +156,27 @@ void __attribute__((constructor)) init()
     hook_util.page_number = detour.page_number;
     hook_util.original_instructions = detour.original_instructions;
   
-    outFile << "successfully hooked";
+    outFile << "successfully hooked" << std::endl;
 
     // locate player1
-    __uint64_t set_skin = hook_util.page_number + function_offsets._setskin;
+    __uint64_t _setskin_address = hook_util.page_number + function_offsets._setskin;
     
-    __uint32_t player_ip_offset = *(__uint32_t*)(set_skin + 0x6);
-    __uint64_t player_base_address = *(__uint64_t*)(set_skin + 0xa + player_ip_offset);
+    __uint32_t player_ip_offset = *(__uint32_t*)(_setskin_address + 0x6);
+    __uint64_t player_base_address = *(__uint64_t*)(_setskin_address + 0xa + player_ip_offset);
     
-    dynamic_ent *player1 = new dynamic_ent(player_base_address);
+    // locate player_ents
+    __uint64_t calcteamscores_address = hook_util.page_number + function_offsets.calcteamscores;
+    __uint32_t players_ip_offset = *(__uint32_t*)(calcteamscores_address + 0x40);
+    __uint64_t players_base_address = calcteamscores_address + 0x44 + players_ip_offset;
+
+    // locate other ents
+    __uint64_t mapmodelslotusage_addresss = hook_util.page_number + function_offsets.mapmodelslotusage;
+    __uint32_t ents_ip_offset = *(__uint32_t*)(mapmodelslotusage_addresss + 0x3a);
+    __uint64_t ents_base_address = mapmodelslotusage_addresss + 0x3e + ents_ip_offset;
 
     // establish the feature resolver and grab some functions from the game
-    hook_util.resolver = new Feature_Resolver(player1, &features);
-    
+    hook_util.resolver = new Feature_Resolver(player_base_address, players_base_address, ents_base_address, &features);
+
     __uint64_t TraceLine_address = hook_util.page_number + function_offsets.TraceLine;
     outFile << TraceLine_address << std::endl;
     hook_util.resolver->TraceLine = (void (*)(vec from, vec to, __uint64_t pTracer, bool CheckPlayers, traceresult_s *tr))TraceLine_address;

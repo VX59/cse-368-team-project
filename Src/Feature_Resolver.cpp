@@ -12,23 +12,36 @@
 void Feature_Resolver::Resolve_Dynamic_Entities()
 {
     this->features->player1->resolve_attributes();
-
-    for (dynamic_ent *e : this->features->dynamic_entities)
+    for (dynamic_ent *e : *(this->features->dynamic_entities))
     {
         e->resolve_attributes();
+        vec o;
+        o.x = e->x;
+        o.y = e->y;
+        o.z = e->z;
+        
+        this->Target_Ray_Trace(o,e->trace);
     }
 }
 
 void Feature_Resolver::Resolve_Static_Entities()
 {
-    for (static_ent *e : this->features->static_entities)
+
+    for (static_ent *e : *this->features->static_entities)
     {
         e->resolve_attributes();
+        vec o;
+        o.x = (float)e->x;
+        o.y = (float)e->y;
+        o.z = (float)e->z;
+        
+        this->Target_Ray_Trace(o,e->trace);
     }
 }
 
 // calculate tangent and normal collision vectors relative to the camera direction
-// there are technically 3 but we will make 5
+// up and down vectors are absolute becuase relative vectors become unstable at pitch = -.1->.1 radians
+
 void Feature_Resolver::TNB_Ray_Trace()
 {
      // trace rays from the players head .. this is supposed to be for ac bots
@@ -90,8 +103,8 @@ void Feature_Resolver::TNB_Ray_Trace()
     tr = &(this->features->rays[3]);
     this->TraceLine(from, to, this->features->player1->base_address, true, tr);
 
+    // absolute for now
     // up
-
     to.x = from.x;
     to.y = from.y;
     to.z = from.z + limit;        
@@ -104,4 +117,14 @@ void Feature_Resolver::TNB_Ray_Trace()
     to.z = from.z - limit;    
     tr = &(this->features->rays[5]);
     this->TraceLine(from, to, this->features->player1->base_address, true, tr);
+}
+
+void Feature_Resolver::Target_Ray_Trace(vec target, traceresult_s *tr)
+{
+    vec from;
+    from.x = this->features->player1->x;
+    from.y = this->features->player1->y;
+    from.z = this->features->player1->z;
+    
+    this->TraceLine(from, target, this->features->player1->base_address, true, tr);
 }

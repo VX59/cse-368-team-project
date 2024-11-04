@@ -35,9 +35,20 @@ struct entity
         __uint32_t yaw = 0x38;
         __uint32_t pitch = 0x3c;
         __uint32_t roll = 0x40;
-    }rel_offsets;
+    }rel_d_offsets;
+
+    struct 
+    {
+        __uint16_t x = 0x0;
+        __uint16_t y = 0x2;
+        __uint16_t z = 0x4;
+        __uint16_t attr1 = 0x6;
+        __uint8_t type = 0x8;
+    }rel_s_offsets;
+    
 
     __uint64_t base_address;
+    traceresult_s *trace;
     entity(__uint64_t base)
     {
         base_address = base;
@@ -47,16 +58,17 @@ struct entity
 
 struct static_ent : entity
 {
-    float x, y, z;
-    int type;
+    __uint16_t x, y, z;
+    __uint8_t type;
 
     static_ent(__uint64_t base) : entity(base) { };
 
     void resolve_attributes()
     {
-        x = *(float*)(base_address + rel_offsets.x);
-        y = *(float*)(base_address + rel_offsets.y);
-        z = *(float*)(base_address + rel_offsets.z);
+        x = *(__uint16_t*)(base_address + rel_s_offsets.x);
+        y = *(__uint16_t*)(base_address + rel_s_offsets.y);
+        z = *(__uint16_t*)(base_address + rel_s_offsets.z);
+        type = *(__uint8_t*)(base_address + rel_s_offsets.type);
     }
 };
 
@@ -75,25 +87,23 @@ struct dynamic_ent : entity
     float z;
     float yaw;
     float pitch;
-    float roll;
 
     dynamic_ent(__uint64_t base) : entity(base) { };
 
     void resolve_attributes()
     {
-        health = *(__uint64_t*)(base_address+rel_offsets.health);
-        armor = *(__uint64_t*)(base_address + rel_offsets.armor);
-        rifle_ammo = *(__uint64_t*)(base_address + rel_offsets.rifle_ammo);
-        pistol_ammo = *(__uint64_t*)(base_address + rel_offsets.pistol_ammo);
-        grenades = *(__uint64_t*)(base_address + rel_offsets.grenades);
-        pistol_ammo_reserve = *(__uint64_t*)(base_address + rel_offsets.pistol_ammo_reserve);
-        rifle_ammo_reserve = *(__uint64_t*)(base_address + rel_offsets.rifle_ammo);
-        x = *(float*)(base_address + rel_offsets.x);
-        y = *(float*)(base_address + rel_offsets.y);
-        z = *(float*)(base_address + rel_offsets.z);
-        yaw = *(float*)(base_address + rel_offsets.yaw);
-        pitch = *(float*)(base_address + rel_offsets.pitch);
-        roll = *(float*)(base_address + rel_offsets.roll);
+        health = *(__uint64_t*)(base_address+rel_d_offsets.health);
+        armor = *(__uint64_t*)(base_address + rel_d_offsets.armor);
+        rifle_ammo = *(__uint64_t*)(base_address + rel_d_offsets.rifle_ammo);
+        pistol_ammo = *(__uint64_t*)(base_address + rel_d_offsets.pistol_ammo);
+        grenades = *(__uint64_t*)(base_address + rel_d_offsets.grenades);
+        pistol_ammo_reserve = *(__uint64_t*)(base_address + rel_d_offsets.pistol_ammo_reserve);
+        rifle_ammo_reserve = *(__uint64_t*)(base_address + rel_d_offsets.rifle_ammo);
+        x = *(float*)(base_address + rel_d_offsets.x);
+        y = *(float*)(base_address + rel_d_offsets.y);
+        z = *(float*)(base_address + rel_d_offsets.z);
+        yaw = *(float*)(base_address + rel_d_offsets.yaw);
+        pitch = *(float*)(base_address + rel_d_offsets.pitch);
     }
 };
 
@@ -102,8 +112,8 @@ struct Features
 {
     traceresult_s rays[6];
     dynamic_ent *player1;
-    std::vector<dynamic_ent*> dynamic_entities;
-    std::vector<static_ent*> static_entities;
+    std::vector<dynamic_ent*> *dynamic_entities;
+    std::vector<static_ent*> *static_entities;
 };
 
 class Feature_Resolver
@@ -118,10 +128,50 @@ public:
     void Resolve_Static_Entities();
     // traces rays from player1
     void TNB_Ray_Trace();
+    void Target_Ray_Trace(vec target, traceresult_s *tr);
 
-    Feature_Resolver(dynamic_ent *p, Features *f)
+    Feature_Resolver(__uint64_t p1, __uint64_t players, __uint64_t ents, Features *f)
     {
+        dynamic_ent *player1 = new dynamic_ent(p1);
         features = f;
-        features->player1 = p;
+        features->player1 = player1;
+
+        __uint64_t players_data_address = *(__uint64_t*)players;
+        __uint32_t players_size = *(__uint32_t*)(players+0xc);
+
+        std::vector<dynamic_ent*> *dynamic_ents = new std::vector<dynamic_ent*>;
+
+        for (__uint32_t i = 0; i < players_size; i++)
+        {
+            __uint64_t player_address = *(__uint64_t*)(players_data_address+0x8*i);
+            if (player_address != 0x0)
+            {                
+                dynamic_ent *player = new dynamic_ent(player_address);
+                traceresult_s *tr = new traceresult_s;
+                player->trace = tr;
+                dynamic_ents->push_back(player);
+            }
+
+        }
+        features->dynamic_entities = dynamic_ents;
+
+        __uint64_t ents_data_address = *(__uint64_t*)ents;
+        __uint32_t ents_size = *(__uint32_t*)(ents+0xc);
+
+        std::vector<static_ent*> *static_ents = new std::vector<static_ent*>;
+
+        for (__uint32_t i = 0; i < ents_size; i++)
+        {
+            __uint64_t ent_address = ents_data_address+28*i;
+            if (ent_address != 0x0)
+            {                
+                static_ent *ent = new static_ent(ent_address);
+                traceresult_s *tr = new traceresult_s;
+                ent->trace = tr;
+                static_ents->push_back(ent);
+            }
+
+        }
+        features->static_entities = static_ents;
     };
 };
