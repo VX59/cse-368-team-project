@@ -1,7 +1,7 @@
 #!/bin/bash
 
 LIB_NAME=ac_detour
-LIB_PATH=$(pwd)/$LIB_NAME.so
+LIB_PATH=$(pwd)/../Bin/$LIB_NAME.so
 PROCID=$(pgrep native_client | head -n 1)
 
 # Check if gdb is installed
@@ -44,18 +44,33 @@ unload() {
     fi
 
     gdb -n --batch -ex "attach $PROCID" \
-                   -ex "call ((int (*) (void *)) dlclose)($LIB_HANDLE)" \
+                   -ex "call dlclose($LIB_HANDLE)" \
                    -ex "detach" > /dev/null 2>&1
 
     echo "Library has been unloaded!"
 }
 
-trap unload SIGINT
+if [ "$#" -gt 0 ]; then
+    LIB_HANDLE=$(gdb -n --batch -ex "attach $PROCID" \
+                                -ex "set \$detour_handler = (void *(*) (const char*, int))dlopen(\"$LIB_PATH\", 1)" \
+                                -ex "print/x \$detour_handler" \
+                                -ex "source injector_gdb_setup.py" | grep -oP '\$1 = \K0x[0-9a-f]+')
 
-LIB_HANDLE=$(gdb -n --batch -ex "attach $PROCID" \
-                            -ex "set \$detour_handler = dlopen(\"$LIB_PATH\", 1)" \
-                            -ex "call (void *) \$detour_handler" \
-                            -ex "detach" | grep -oP '\$1 = \(void \*\) \K0x[0-9a-f]+')
+    gdb -ex "attach $PROCID" \
+        -ex "call init()" \
+        -ex "printf \"\nYou are running this injection script in interactive mode.\nBy default it will open hook resources and call 'init()' constructor.\nWhen you run 'Quit' shared library will be closed by script.\n\n\""
+
+    unload
+    exit 0
+else
+    trap unload SIGINT
+    LIB_HANDLE=$(gdb -n --batch -ex "attach $PROCID" \
+                                -ex "set \$detour_handler = (void *(*) (const char*, int))dlopen(\"$LIB_PATH\", 1)" \
+                                -ex "print/x \$detour_handler" \
+                                -ex "source injector_gdb_setup.py" \
+                                -ex "call init()" \
+                                -ex "detach" | grep -oP '\$1 = \K0x[0-9a-f]+')
+fi
 
 if [ -z "$LIB_HANDLE" ]; then
     echo "Failed to load library"
