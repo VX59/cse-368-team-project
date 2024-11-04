@@ -19,16 +19,14 @@ private:
     void inject_detour_instructions();
 
 public:
+    static const __uint64_t injection_offset = 17;
+    static const __uint8_t hook_instruction_length = 17;
     static const __uint64_t target_page_size = 0x13D000;
-    static const __uint64_t check_input_offset = 0x69B00;
-
-    // Set at top of source file
-    static __uint64_t injection_offset;
-    static __uint8_t hook_instruction_length;
-
-    __uint64_t check_input_address;
+    
+    __uint64_t victim_offset;
+    __uint64_t victim_address;
     __uint64_t page_number;
-    void *original_instructions;
+    __uint8_t *original_instructions;
 
-    AC_detour(__uint64_t trampoline_function_addr);
+    AC_detour(__uint64_t vict_offset, __uint64_t trampoline_function_addr);
 };
