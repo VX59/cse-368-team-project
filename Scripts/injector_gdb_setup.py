@@ -8,14 +8,27 @@
 
 import gdb
 
-instruction_patch_idx = str(int(gdb.parse_and_eval('AC_detour::injection_offset')))
+instruction_patch_idx = str(int(gdb.parse_and_eval('AC_detour::hook_injection_offset')))
 instruction_patch_size = str(int(gdb.parse_and_eval('AC_detour::hook_instruction_length')))
 
 ###############################################################################
 #
 # Setting addresses of functions we want
 #
-gdb.execute('set hook_util.check_input_address = &checkinput')
+gdb.execute('set AC_function_addresses.checkinput = &checkinput')
+gdb.execute('set AC_function_addresses.raycube = &raycube')
+gdb.execute('set AC_function_addresses.TraceLine = &TraceLine')
+gdb.execute('set AC_function_addresses._setskin = &_setskin')
+gdb.execute('set AC_function_addresses.calcteamscores = &calcteamscores')
+gdb.execute('set AC_function_addresses.mapmodelslotusage = &mapmodelslotusage')
+
+###############################################################################
+#
+# Setting addresses of symbols we want
+#
+gdb.execute('set AC_symbol_addresses.player1 = &player1')
+gdb.execute('set AC_symbol_addresses.players = &players')
+gdb.execute('set AC_symbol_addresses.ents = &ents')
 
 ###############################################################################
 #

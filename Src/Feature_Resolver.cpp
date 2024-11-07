@@ -34,7 +34,7 @@ void Feature_Resolver::Resolve_Static_Entities()
         o.x = (float)e->x;
         o.y = (float)e->y;
         o.z = (float)e->z;
-        
+
         this->Target_Ray_Trace(o,e->trace);
     }
 }
