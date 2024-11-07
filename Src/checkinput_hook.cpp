@@ -189,7 +189,6 @@ void /*__attribute__((constructor))*/ init()
     // establish the feature resolver and grab some functions from the game
     hook_util.resolver = new Feature_Resolver(AC_symbol_addresses.player1, AC_symbol_addresses.players, AC_symbol_addresses.ents, &features);
 
-    std::cout << "we good bb" << std::endl;
     outFile << AC_function_addresses.TraceLine << std::endl;
     hook_util.resolver->TraceLine = (void (*)(vec from, vec to, __uint64_t pTracer, bool CheckPlayers, traceresult_s *tr))AC_function_addresses.TraceLine;
 
