@@ -57,8 +57,7 @@ if [ "$#" -gt 0 ]; then
                                 -ex "source injector_gdb_setup.py" | grep -oP '\$1 = \K0x[0-9a-f]+')
 
     gdb -ex "attach $PROCID" \
-        -ex "call init()" \
-        -ex "printf \"\nYou are running this injection script in interactive mode.\nBy default it will open hook resources and call 'init()' constructor.\nWhen you run 'Quit' shared library will be closed by script.\n\n\""
+        -ex "printf \"\nYou are running this injection script in interactive mode.\nBy default it will open hook resources. If you want to run hook do 'call init()' then 'cont'. \nWhen you run 'Quit' shared library will be closed by script.\n\n\""
 
     unload
     exit 0
