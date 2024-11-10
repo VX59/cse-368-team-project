@@ -7,6 +7,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #include <random>
+#include <iostream>
 
 // resolves the player entity list
 void Feature_Resolver::Resolve_Dynamic_Entities()

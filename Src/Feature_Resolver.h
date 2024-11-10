@@ -1,6 +1,7 @@
-#include "player_ent.h"
+#pragma once
 #include <unistd.h>
 #include <vector>
+#include "sdl_lib.h"
 
 struct vec
 {
@@ -90,6 +91,11 @@ struct dynamic_ent : entity
 
     dynamic_ent(__uint64_t base) : entity(base) { };
 
+    void set_yaw_pitch(float y, float p) {
+        *(float*)(base_address+rel_d_offsets.yaw) = y;
+        *(float*)(base_address+rel_d_offsets.pitch) = p;
+    }
+
     void resolve_attributes()
     {
         health = *(__uint64_t*)(base_address+rel_d_offsets.health);
@@ -114,6 +120,12 @@ struct Features
     dynamic_ent *player1;
     std::vector<dynamic_ent*> *dynamic_entities;
     std::vector<static_ent*> *static_entities;
+
+    // these fields allow us to turn 3D XYZ coordinates into on-screen 2D
+    // coordinates (ESP/aimbot)
+    int screenw;
+    int screenh;
+    float *mvpmatrix;
 };
 
 class Feature_Resolver
@@ -132,7 +144,7 @@ public:
 
     Feature_Resolver(__uint64_t p1, __uint64_t players, __uint64_t ents, Features *f)
     {
-        dynamic_ent *player1 = new dynamic_ent(p1);
+        dynamic_ent *player1 = new dynamic_ent((__uint64_t)(*(__uint64_t **)p1));
         features = f;
         features->player1 = player1;
 

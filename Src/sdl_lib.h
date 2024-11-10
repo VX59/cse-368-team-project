@@ -1,3 +1,4 @@
+#pragma once
 #include <unistd.h>
 
 typedef struct SDL_Keysym

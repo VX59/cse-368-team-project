@@ -6,6 +6,7 @@
 #include <cmath>
 #include "Feature_Resolver.h"
 #include <iostream>
+#include "agents/conditional/conditional_agent.h"
 
 SDL_keys sdl_keys;
 Features features;
@@ -39,6 +40,9 @@ struct
     __uint64_t player1;
     __uint64_t players;
     __uint64_t ents;
+    __uint64_t screenw;
+    __uint64_t screenh;
+    __uint64_t mvpmatrix;
 } AC_symbol_addresses;
 
 /**
@@ -54,19 +58,32 @@ struct
     AC_detour detour;
 } hook_util;
 
+ConditionalAgent *agent;
+bool agentSet = false;
+
 // super evil code >:)
 void hook_function() {
     std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log");
-    
-    // resolve the gamestate, write to shared memory
 
+    if (!agentSet) {
+        agent = new ConditionalAgent(hook_util.resolver->features, hook_util.interface);
+    }
+
+    hook_util.resolver->Resolve_Dynamic_Entities();
+    hook_util.resolver->TNB_Ray_Trace();
+    agent->run();
+
+    outFile.close();
+    return;
+
+    // resolve the gamestate, write to shared memory
     //////////////// updating critical section
-    outFile << "resolving players" << std::endl;
+    std::cout << "resolving players" << std::endl;
     hook_util.resolver->Resolve_Dynamic_Entities();
     for (dynamic_ent *e : *features.dynamic_entities)
     {
         std::cout << e->x << e->y << e->z << std::endl;
-        outFile << e->x << e->y << e->z << std::endl;
+        //outFile << e->x << e->y << e->z << std::endl;
     }
 
     outFile << "resolving ents" << std::endl;
@@ -79,6 +96,7 @@ void hook_function() {
     }
 
     hook_util.resolver->TNB_Ray_Trace();
+    return;
     ///////////////// end update
 
     // outFile << "yaw: " << hook_util.resolver->features->player1->yaw << " pitch: " << hook_util.resolver->features->player1->pitch << std::endl;
@@ -164,7 +182,7 @@ void /*__attribute__((constructor))*/ init()
     outFile << std::hex << hook_util.handle << std::endl;
     void *sdl_pushevent_address = dlsym(hook_util.handle, "SDL_PushEvent");
     void *sdl_getmousestate_address = dlsym(hook_util.handle, "SDL_GetMouseState");
-    
+
     // establish the interaction api
     hook_util.interface = new Environment_Interaction;
     hook_util.interface->sdl_util.SDL_PushEvent = (int (*)(SDL_Event*))sdl_pushevent_address;
@@ -188,6 +206,9 @@ void /*__attribute__((constructor))*/ init()
 
     // establish the feature resolver and grab some functions from the game
     hook_util.resolver = new Feature_Resolver(AC_symbol_addresses.player1, AC_symbol_addresses.players, AC_symbol_addresses.ents, &features);
+    hook_util.resolver->features->screenw = *(__uint64_t *)AC_symbol_addresses.screenw;
+    hook_util.resolver->features->screenh = *(__uint64_t *)AC_symbol_addresses.screenh;
+    hook_util.resolver->features->mvpmatrix = (float *)AC_symbol_addresses.mvpmatrix;
 
     outFile << AC_function_addresses.TraceLine << std::endl;
     hook_util.resolver->TraceLine = (void (*)(vec from, vec to, __uint64_t pTracer, bool CheckPlayers, traceresult_s *tr))AC_function_addresses.TraceLine;
