@@ -125,7 +125,8 @@ void Feature_Resolver::Target_Ray_Trace(vec target, traceresult_s *tr)
     vec from;
     from.x = this->features->player1->x;
     from.y = this->features->player1->y;
-    from.z = this->features->player1->z;
+    from.z = this->features->player1->z+5.5;
     
     this->TraceLine(from, target, this->features->player1->base_address, true, tr);
+    //this->patricle_trail(1, -500, from, target);
 }

@@ -29,6 +29,7 @@ struct
     __uint64_t _setskin = 0x2e5f0;
     __uint64_t calcteamscores = 0xb1930;
     __uint64_t mapmodelslotusage = 0x957b0;
+    __uint64_t particle_trail = NULL;
 } AC_function_addresses;
 
 /**
@@ -53,7 +54,6 @@ struct
     void *handle;
     Environment_Interaction *interface;
     Feature_Resolver *resolver;
-    void (*patricle_trail)(int type, int fade, vec s, vec e);
 
     AC_detour detour;
 } hook_util;
@@ -212,6 +212,7 @@ void /*__attribute__((constructor))*/ init()
 
     outFile << AC_function_addresses.TraceLine << std::endl;
     hook_util.resolver->TraceLine = (void (*)(vec from, vec to, __uint64_t pTracer, bool CheckPlayers, traceresult_s *tr))AC_function_addresses.TraceLine;
+    hook_util.resolver->patricle_trail = (void (*)(int type, int fade, vec s, vec e))AC_function_addresses.particle_trail;
 
     outFile.close();
 }

@@ -21,6 +21,7 @@ gdb.execute('set AC_function_addresses.TraceLine = &TraceLine')
 gdb.execute('set AC_function_addresses._setskin = &_setskin')
 gdb.execute('set AC_function_addresses.calcteamscores = &calcteamscores')
 gdb.execute('set AC_function_addresses.mapmodelslotusage = &mapmodelslotusage')
+gdb.execute('set AC_function_addresses.particle_trail = &particle_trail')
 
 ###############################################################################
 #

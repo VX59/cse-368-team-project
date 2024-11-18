@@ -143,6 +143,7 @@ public:
     Features *features;
 
     void (*TraceLine)(vec from, vec to, __uint64_t pTracer, bool CheckPlayers, traceresult_s *tr);
+    void (*patricle_trail)(int type, int fade, vec s, vec e);
 
     // resolve player entity features including player1
     void Resolve_Dynamic_Entities();
