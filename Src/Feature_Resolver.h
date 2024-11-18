@@ -23,6 +23,8 @@ struct entity
 {
     struct
     {
+        __uint32_t name = 0x219;
+        __uint32_t team = 0x320;
         __uint32_t health = 0x100;
         __uint32_t armor =  0x104;
         __uint32_t rifle_ammo = 0x154;
@@ -75,6 +77,7 @@ struct static_ent : entity
 
 struct dynamic_ent : entity
 {
+    char name[260];
     int team;
     int health;
     int armor;
@@ -98,6 +101,12 @@ struct dynamic_ent : entity
 
     void resolve_attributes()
     {
+        char *memName = (char *)(base_address+rel_d_offsets.name);
+        for (int i = 0; i < 260; i++) {
+            name[i] = memName[i];
+        }
+
+        team = *(__uint64_t*)(base_address+rel_d_offsets.team);
         health = *(__uint64_t*)(base_address+rel_d_offsets.health);
         armor = *(__uint64_t*)(base_address + rel_d_offsets.armor);
         rifle_ammo = *(__uint64_t*)(base_address + rel_d_offsets.rifle_ammo);
