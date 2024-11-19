@@ -1,3 +1,4 @@
+#pragma once
 #include "sdl_lib.h"
 #include <unistd.h>
 

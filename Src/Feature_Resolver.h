@@ -1,6 +1,7 @@
-#include "player_ent.h"
+#pragma once
 #include <unistd.h>
 #include <vector>
+#include "sdl_lib.h"
 
 struct vec
 {
@@ -22,6 +23,8 @@ struct entity
 {
     struct
     {
+        __uint32_t name = 0x219;
+        __uint32_t team = 0x320;
         __uint32_t health = 0x100;
         __uint32_t armor =  0x104;
         __uint32_t rifle_ammo = 0x154;
@@ -74,6 +77,7 @@ struct static_ent : entity
 
 struct dynamic_ent : entity
 {
+    char name[260];
     int team;
     int health;
     int armor;
@@ -90,8 +94,19 @@ struct dynamic_ent : entity
 
     dynamic_ent(__uint64_t base) : entity(base) { };
 
+    void set_yaw_pitch(float y, float p) {
+        *(float*)(base_address+rel_d_offsets.yaw) = y;
+        *(float*)(base_address+rel_d_offsets.pitch) = p;
+    }
+
     void resolve_attributes()
     {
+        char *memName = (char *)(base_address+rel_d_offsets.name);
+        for (int i = 0; i < 260; i++) {
+            name[i] = memName[i];
+        }
+
+        team = *(__uint64_t*)(base_address+rel_d_offsets.team);
         health = *(__uint64_t*)(base_address+rel_d_offsets.health);
         armor = *(__uint64_t*)(base_address + rel_d_offsets.armor);
         rifle_ammo = *(__uint64_t*)(base_address + rel_d_offsets.rifle_ammo);
@@ -114,6 +129,12 @@ struct Features
     dynamic_ent *player1;
     std::vector<dynamic_ent*> *dynamic_entities;
     std::vector<static_ent*> *static_entities;
+
+    // these fields allow us to turn 3D XYZ coordinates into on-screen 2D
+    // coordinates (ESP/aimbot)
+    int screenw;
+    int screenh;
+    float *mvpmatrix;
 };
 
 class Feature_Resolver
@@ -122,6 +143,7 @@ public:
     Features *features;
 
     void (*TraceLine)(vec from, vec to, __uint64_t pTracer, bool CheckPlayers, traceresult_s *tr);
+    void (*patricle_trail)(int type, int fade, vec s, vec e);
 
     // resolve player entity features including player1
     void Resolve_Dynamic_Entities();
@@ -132,7 +154,7 @@ public:
 
     Feature_Resolver(__uint64_t p1, __uint64_t players, __uint64_t ents, Features *f)
     {
-        dynamic_ent *player1 = new dynamic_ent(p1);
+        dynamic_ent *player1 = new dynamic_ent((__uint64_t)(*(__uint64_t **)p1));
         features = f;
         features->player1 = player1;
 

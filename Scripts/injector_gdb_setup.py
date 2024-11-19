@@ -21,6 +21,7 @@ gdb.execute('set AC_function_addresses.TraceLine = &TraceLine')
 gdb.execute('set AC_function_addresses._setskin = &_setskin')
 gdb.execute('set AC_function_addresses.calcteamscores = &calcteamscores')
 gdb.execute('set AC_function_addresses.mapmodelslotusage = &mapmodelslotusage')
+gdb.execute('set AC_function_addresses.particle_trail = &particle_trail')
 
 ###############################################################################
 #
@@ -29,6 +30,9 @@ gdb.execute('set AC_function_addresses.mapmodelslotusage = &mapmodelslotusage')
 gdb.execute('set AC_symbol_addresses.player1 = &player1')
 gdb.execute('set AC_symbol_addresses.players = &players')
 gdb.execute('set AC_symbol_addresses.ents = &ents')
+gdb.execute('set AC_symbol_addresses.screenw = &screenw')
+gdb.execute('set AC_symbol_addresses.screenh = &screenh')
+gdb.execute('set AC_symbol_addresses.mvpmatrix = &mvpmatrix')
 
 ###############################################################################
 #
