@@ -61,10 +61,13 @@ typedef union SDL_Event
 struct SDL
 {
     int scancode_offset = 93;
+    __uint8_t SDL_RELEASED = 0;
     __uint8_t SDL_PRESSED = 1;
     __uint32_t SDL_KEYDOWN = 0x300;
+    __uint32_t SDL_KEYUP = 0x301;
     __uint32_t SDL_MOUSEMOTION = 0x400;
     __uint32_t SDL_MOUSEBUTTONDOWN = 0x401;
+    __uint32_t SDL_MOUSEBUTTONUP = 0x402;
     __uint32_t SDL_BUTTON_LEFT = 1;
     __uint32_t SDL_TOUCH_MOUSEID = ((__uint32_t)-1);
 
