@@ -21,6 +21,7 @@ void Feature_Resolver::Resolve_Dynamic_Entities()
         o.y = e->y;
         o.z = e->z;
         
+        this->features->node_positions.push_back(o);
         this->Target_Ray_Trace(o,e->trace);
     }
 }
@@ -74,6 +75,7 @@ void Feature_Resolver::TNB_Ray_Trace()
     }
 
     traceresult_s *tr = &(this->features->rays[0]);
+    
     this->TraceLine(from, to, this->features->player1->base_address, true, tr);
     // right
     to.x = from.x + (cos(yaw+M_PI_2)) * limit;
@@ -102,21 +104,6 @@ void Feature_Resolver::TNB_Ray_Trace()
     to.y = from.y - (sin(yaw+M_PI_2)) * limit;
     to.z = from.z;
     tr = &(this->features->rays[3]);
-    this->TraceLine(from, to, this->features->player1->base_address, true, tr);
-
-    // absolute for now
-    // up
-    to.x = from.x;
-    to.y = from.y;
-    to.z = from.z + limit;        
-    tr = &(this->features->rays[4]);
-    this->TraceLine(from, to, this->features->player1->base_address, true, tr);
-
-    // down
-    to.x = from.x;
-    to.y = from.y;
-    to.z = from.z - limit;    
-    tr = &(this->features->rays[5]);
     this->TraceLine(from, to, this->features->player1->base_address, true, tr);
 }
 

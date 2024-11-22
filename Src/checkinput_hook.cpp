@@ -6,6 +6,8 @@
 #include <cmath>
 #include "Feature_Resolver.h"
 #include <iostream>
+#include <random>
+#include <algorithm>
 #include "agents/conditional/conditional_agent.h"
 
 SDL_keys sdl_keys;
@@ -61,7 +63,13 @@ struct
 ConditionalAgent *agent;
 bool agentSet = false;
 
+float weight(float x, float rho, float offset)
+{
+    return (1/(rho*std::sqrt(2*M_PI)))*std::exp(pow((-1/2)*((x-offset)/rho),2));
+}
+
 // super evil code >:)
+
 void hook_function() {
     std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log");
 
@@ -70,79 +78,107 @@ void hook_function() {
     }
 
     hook_util.resolver->Resolve_Dynamic_Entities();
-    hook_util.resolver->TNB_Ray_Trace();
-    agent->run();
 
-    outFile.close();
-    return;
+    // given the objective node see if a path in the graph exists to it
+    // if it does calculate the path and proceed
+    // otherwise turn on exploration mode
 
-    // resolve the gamestate, write to shared memory
-    //////////////// updating critical section
-    std::cout << "resolving players" << std::endl;
-    hook_util.resolver->Resolve_Dynamic_Entities();
-    for (dynamic_ent *e : *features.dynamic_entities)
+    // node objectives is the path the agent is following. On starting and every time we reach an objective we should
+    // evaluate the objectives.
+
+    // assuming the first item in the objectives is the objectives is the actual target and everything stacked are waypoints
+    // the objectives list cannot be emptied until the current node and the end of the target are
+    // BOTH in the connected nodes list.
+
+    // Once the objectives are emptied then we can choose a new target
+
+    // first check if the distance to a node is low enough to warrant objective eval
+
+    float obj_dist = std::sqrt(pow(hook_util.resolver->features->node_positions[hook_util.resolver->features->objective_nodes.back()].x-hook_util.resolver->features->player1->x,2)+
+                            pow(hook_util.resolver->features->node_positions[hook_util.resolver->features->objective_nodes.back()].y-hook_util.resolver->features->player1->y,2));
+    if (obj_dist < 1)
     {
-        std::cout << e->x << e->y << e->z << std::endl;
-        //outFile << e->x << e->y << e->z << std::endl;
+        hook_util.resolver->features->current_node = hook_util.resolver->features->objective_nodes.back();
+        hook_util.resolver->features->objective_nodes.pop_back();
+
+        // after reaching an objective and on start we see if there are more objectives
+        // if not make a random one
+        if (hook_util.resolver->features->objective_nodes.size() == 0)
+        {
+            std::random_device rd;
+            std::mt19937 gen(rd());
+
+            std::uniform_real_distribution<int> dist(0, hook_util.resolver->features->nodes);
+
+            // push a random objective point
+            hook_util.resolver->features->objective_nodes.push_back(dist(gen));
+        }
+
+        auto found = std::find(hook_util.resolver->features->connected_nodes.begin(),hook_util.resolver->features->connected_nodes.end(), 
+            hook_util.resolver->features->objective_nodes.back());
+
+        if (found != hook_util.resolver->features->connected_nodes.end())
+        {
+            // check if objectives is a path from current to target node .. if not its probably just 1 random point
+            // if objectives is not a path .. add the path to it using djikstra or astar
+
+            // if objectives is a path we dont have to do anything just follow it
+        } else {
+            // if its not connected explore, find k closest, try the furthest non colliding
+            int k=4;
+            std::vector<int> indices(hook_util.resolver->features->nodes);
+            std::vector<float> distances(hook_util.resolver->features->nodes);
+
+            float cx = hook_util.resolver->features->player1->x;
+            float cy = hook_util.resolver->features->player1->y;
+
+            std::iota(indices.begin(), indices.end(), 0);
+            std::transform(hook_util.resolver->features->node_positions.begin(),
+                            hook_util.resolver->features->node_positions.end(),
+                            distances.begin(), [cx,cy](vec v) { return std::sqrt(pow(v.x-cx,2)+pow(v.y-cy,2));});
+
+            // Sort the indices based on the corresponding values in vec
+            std::partial_sort(indices.begin(), indices.begin() + k, indices.end(),
+                            [&distances](int i1, int i2) { return distances[i1] < distances[i2]; });
+
+            // Return the closest k nodes
+            std::vector<int> min_nodes(indices.begin(), indices.begin() + k);
+
+            // draw rays
+            std::vector<int> no_collide_neighbors;
+            for (int i : min_nodes)
+            {
+                vec node = hook_util.resolver->features->node_positions[i];
+                traceresult_s tr;
+                hook_util.resolver->Target_Ray_Trace(node, &tr);
+
+                // if no collision add it to the graph
+                if (!tr.collided)
+                {
+                    // fix later .. check if its already there
+                    hook_util.resolver->features->node_adjacency_mat[i][hook_util.resolver->features->current_node] = 1;
+                    hook_util.resolver->features->node_adjacency_mat[hook_util.resolver->features->current_node][i] = 1;
+                    hook_util.resolver->features->connected_nodes.push_back(i);
+                    no_collide_neighbors.push_back(i);
+                }
+            }
+
+            // set a objective to the furthest non colliding k-node
+            // stacks in objectives to next tick we see this node in the graph and move to it
+            hook_util.resolver->features->objective_nodes.push_back(no_collide_neighbors.back());
+        }
     }
 
-    outFile << "resolving ents" << std::endl;
-    hook_util.resolver->Resolve_Static_Entities();
-
-    for (static_ent *e : *features.static_entities)
-    {
-        float distance = sqrt(pow(features.player1->x-e->trace->end.x,2)+pow(features.player1->y-e->trace->end.y,2)+pow(features.player1->z-e->trace->end.z,2));
-        outFile << e->trace->collided << " distance: " << distance << " " << e->type << std::endl;
-    }
-
-    hook_util.resolver->TNB_Ray_Trace();
-    return;
-    ///////////////// end update
-
-    // outFile << "yaw: " << hook_util.resolver->features->player1->yaw << " pitch: " << hook_util.resolver->features->player1->pitch << std::endl;
-    // outFile << "x: " << hook_util.resolver->features->player1->x << "y: " << hook_util.resolver->features->player1->y << "z: " << hook_util.resolver->features->player1->z << std::endl;
-
-    // // calculate the distance of the rays
-    // float distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[0].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[0].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[0].end.z,2));
-    // outFile << "forwards: " << distance << std::endl;
-    // outFile << features.rays[0].collided << " " << features.rays[0].end.x << " " << features.rays[0].end.y << " " << features.rays[0].end.z << std::endl;
+    // turn towards the next objective
+    ///...
+    // move forwards
+    ///...
     
-    // distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[1].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[1].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[1].end.z,2));
-    // outFile << "right: " << distance << std::endl;
-    // outFile << features.rays[1].collided << " " << features.rays[1].end.x << " " << features.rays[1].end.y << " " << features.rays[1].end.z << std::endl;
-    
-    // distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[2].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[2].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[2].end.z,2));
-    // outFile << "back: " << distance << std::endl;
-    // outFile << features.rays[2].collided << " " << features.rays[2].end.x << " " << features.rays[2].end.y << " " << features.rays[2].end.z << std::endl;
-    
-    // distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[3].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[3].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[3].end.z,2));
-    // outFile << "left: " << distance << std::endl;
-    // outFile << features.rays[3].collided << " " << features.rays[3].end.x << " " << features.rays[3].end.y << " " << features.rays[3].end.z << std::endl;
-
-    // distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[4].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[4].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[4].end.z,2));
-    // outFile << "up: " << distance << std::endl;
-    // outFile << features.rays[4].collided << " " << features.rays[4].end.x << " " << features.rays[4].end.y << " " << features.rays[4].end.z << std::endl;
-    
-    // distance = sqrt(pow(hook_util.resolver->features->player1->x-features.rays[5].end.x,2)+pow(hook_util.resolver->features->player1->y-features.rays[5].end.y,2)+pow(hook_util.resolver->features->player1->z+5.5-features.rays[5].end.z,2));
-    // outFile << "down: " << distance << std::endl;
-    // outFile << features.rays[5].collided << " " << features.rays[5].end.x << " " << features.rays[5].end.y << " " << features.rays[5].end.z << std::endl;
-
-    // wait for response
-    // read actions from shared memory
-
-    // manipulate event queue
-
-    // int result = hook_util.interface->Mouse_Button_Event();
-
-    // outFile << result << std::endl;
-    // if (result != 1) {
-    //     outFile << "Failed to push event " << std::endl;
-    // } else {
-    //     outFile << "Event pushed successfully." << std::endl;
-    // }
+    outFile << hook_util.resolver->features->player1->x << " " << hook_util.resolver->features->player1->y;
 
     outFile.close();
 }
+
 
 void __attribute__((naked)) trampoline_function()
 {
@@ -173,7 +209,7 @@ void __attribute__((naked)) trampoline_function()
     );
 }           
 
-void /*__attribute__((constructor))*/ init()
+void init()
 {
     std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log");
 
@@ -192,25 +228,12 @@ void /*__attribute__((constructor))*/ init()
     hook_util.detour = AC_detour(AC_function_addresses.checkinput, (__uint64_t)&trampoline_function);
     outFile << "successfully hooked" << std::endl;
 
-    // locate player1
-    /*__uint32_t player_ip_offset = *(__uint32_t*)(AC_function_addresses._setskin + 0x6);
-    __uint64_t player_base_address = *(__uint64_t*)(AC_function_addresses._setskin + 0xa + player_ip_offset);
-    
-    // locate player_ents
-    __uint32_t players_ip_offset = *(__uint32_t*)(AC_function_addresses.calcteamscores + 0x40);
-    __uint64_t players_base_address = AC_function_addresses.calcteamscores + 0x44 + players_ip_offset;
-
-    // locate other ents
-    __uint32_t ents_ip_offset = *(__uint32_t*)(AC_function_addresses.mapmodelslotusage + 0x3a);
-    __uint64_t ents_base_address = AC_function_addresses.mapmodelslotusage + 0x3e + ents_ip_offset;*/
-
     // establish the feature resolver and grab some functions from the game
     hook_util.resolver = new Feature_Resolver(AC_symbol_addresses.player1, AC_symbol_addresses.players, AC_symbol_addresses.ents, &features);
     hook_util.resolver->features->screenw = *(__uint64_t *)AC_symbol_addresses.screenw;
     hook_util.resolver->features->screenh = *(__uint64_t *)AC_symbol_addresses.screenh;
     hook_util.resolver->features->mvpmatrix = (float *)AC_symbol_addresses.mvpmatrix;
 
-    outFile << AC_function_addresses.TraceLine << std::endl;
     hook_util.resolver->TraceLine = (void (*)(vec from, vec to, __uint64_t pTracer, bool CheckPlayers, traceresult_s *tr))AC_function_addresses.TraceLine;
     hook_util.resolver->patricle_trail = (void (*)(int type, int fade, vec s, vec e))AC_function_addresses.particle_trail;
 

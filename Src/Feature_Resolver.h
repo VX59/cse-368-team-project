@@ -122,10 +122,9 @@ struct dynamic_ent : entity
     }
 };
 
-// this is the gamestate we share with the reinforcement learning environment
 struct Features
 {
-    traceresult_s rays[6];
+    traceresult_s rays[4];
     dynamic_ent *player1;
     std::vector<dynamic_ent*> *dynamic_entities;
     std::vector<static_ent*> *static_entities;
@@ -135,6 +134,14 @@ struct Features
     int screenw;
     int screenh;
     float *mvpmatrix;
+
+    // for exploration
+    int nodes = 400;
+    std::vector<vec> node_positions;
+    std::vector<int> connected_nodes;
+    std::vector<std::vector<int>> node_adjacency_mat;
+    std::vector<int> objective_nodes;
+    int current_node;
 };
 
 class Feature_Resolver
@@ -157,6 +164,38 @@ public:
         dynamic_ent *player1 = new dynamic_ent((__uint64_t)(*(__uint64_t **)p1));
         features = f;
         features->player1 = player1;
+        features->player1->resolve_attributes();
+        Resolve_Static_Entities();
+
+        vec start;
+        start.x=features->player1->x;
+        start.y=features->player1->y;
+        start.z=features->player1->z;
+
+        features->node_positions.push_back(start);
+        features->current_node = features->node_positions.size()-1;
+        features->connected_nodes.push_back(features->current_node);
+        features->objective_nodes.push_back(features->current_node);
+        
+        std::vector<std::vector<int>> mat(features->nodes, std::vector<int>(features->nodes,0));
+        features->node_adjacency_mat = mat;
+
+        // initiate exploration graph
+        std::random_device rd;
+        std::mt19937 gen(rd());
+
+        std::uniform_real_distribution<float> dist(0, 250);
+        int nodes = hook_util.resolver->features->nodes;
+        // n random points on the map
+        for(int i = 0; i < nodes; i++)
+        {
+            vec rndv;
+            rndv.x = dist(gen);
+            rndv.y = dist(gen);
+            rndv.z = 3; // like waist level
+
+            hook_util.resolver->features->node_positions.push_back(rndv);
+        }
 
         __uint64_t players_data_address = *(__uint64_t*)players;
         __uint32_t players_size = *(__uint32_t*)(players+0xc);
