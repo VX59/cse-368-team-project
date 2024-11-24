@@ -1,6 +1,7 @@
 #pragma once
 #include <unistd.h>
 #include <vector>
+#include <random>
 #include "sdl_lib.h"
 
 struct vec
@@ -136,12 +137,14 @@ struct Features
     float *mvpmatrix;
 
     // for exploration
-    int nodes = 400;
+    int random_nodes = 2048;
+    int nodes = random_nodes;
     std::vector<vec> node_positions;
     std::vector<int> connected_nodes;
     std::vector<std::vector<int>> node_adjacency_mat;
     std::vector<int> objective_nodes;
     int current_node;
+    bool objective_is_path = false;
 };
 
 class Feature_Resolver
@@ -154,7 +157,6 @@ public:
 
     // resolve player entity features including player1
     void Resolve_Dynamic_Entities();
-    void Resolve_Static_Entities();
     // traces rays from player1
     void TNB_Ray_Trace();
     void Target_Ray_Trace(vec target, traceresult_s *tr);
@@ -165,37 +167,6 @@ public:
         features = f;
         features->player1 = player1;
         features->player1->resolve_attributes();
-        Resolve_Static_Entities();
-
-        vec start;
-        start.x=features->player1->x;
-        start.y=features->player1->y;
-        start.z=features->player1->z;
-
-        features->node_positions.push_back(start);
-        features->current_node = features->node_positions.size()-1;
-        features->connected_nodes.push_back(features->current_node);
-        features->objective_nodes.push_back(features->current_node);
-        
-        std::vector<std::vector<int>> mat(features->nodes, std::vector<int>(features->nodes,0));
-        features->node_adjacency_mat = mat;
-
-        // initiate exploration graph
-        std::random_device rd;
-        std::mt19937 gen(rd());
-
-        std::uniform_real_distribution<float> dist(0, 250);
-        int nodes = hook_util.resolver->features->nodes;
-        // n random points on the map
-        for(int i = 0; i < nodes; i++)
-        {
-            vec rndv;
-            rndv.x = dist(gen);
-            rndv.y = dist(gen);
-            rndv.z = 3; // like waist level
-
-            hook_util.resolver->features->node_positions.push_back(rndv);
-        }
 
         __uint64_t players_data_address = *(__uint64_t*)players;
         __uint32_t players_size = *(__uint32_t*)(players+0xc);
@@ -227,12 +198,52 @@ public:
             if (ent_address != 0x0)
             {                
                 static_ent *ent = new static_ent(ent_address);
-                traceresult_s *tr = new traceresult_s;
-                ent->trace = tr;
+                ent->resolve_attributes();
+                vec o;
+                o.x = ent->x;
+                o.y = ent->y;
+                o.z = ent->z; 
+                this->features->node_positions.push_back(o);
                 static_ents->push_back(ent);
+                this->features->connected_nodes.push_back(0);
             }
 
         }
         features->static_entities = static_ents;
+
+        vec start;
+        start.x=features->player1->x;
+        start.y=features->player1->y;
+        start.z=features->player1->z;
+
+        features->node_positions.push_back(start);
+        features->current_node = features->node_positions.size()-1;
+        features->connected_nodes[features->current_node] = 1;
+        features->objective_nodes.push_back(features->current_node);
+
+        // initiate exploration graph
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        
+        float bounds = 75;
+        std::uniform_real_distribution<float> xdist(features->player1->x-bounds,features->player1->x+bounds);
+        std::uniform_real_distribution<float> ydist(features->player1->y-bounds,features->player1->y+bounds);        
+        std::uniform_real_distribution<float> zdist(0,9);
+        int nodes = features->random_nodes;
+        // n random points on the map
+        for(int i = 0; i < nodes; i++)
+        {
+            vec rndv = {xdist(gen), ydist(gen), zdist(gen)};
+            while (rndv.x > 200 || rndv.y > 200 || rndv.x == 0 || rndv.y == 0)
+            {
+                rndv = {xdist(gen), ydist(gen), zdist(gen)};
+            }
+            features->node_positions.push_back(rndv);
+            features->connected_nodes.push_back(0);
+        }
+
+        features->nodes = features->node_positions.size();
+        std::vector<std::vector<int>> mat(features->node_positions.size(), std::vector<int>(features->node_positions.size(),0));
+        features->node_adjacency_mat = mat;
     };
 };

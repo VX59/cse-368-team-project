@@ -16,28 +16,7 @@ void Feature_Resolver::Resolve_Dynamic_Entities()
     for (dynamic_ent *e : *(this->features->dynamic_entities))
     {
         e->resolve_attributes();
-        vec o;
-        o.x = e->x;
-        o.y = e->y;
-        o.z = e->z;
         
-        this->features->node_positions.push_back(o);
-        this->Target_Ray_Trace(o,e->trace);
-    }
-}
-
-void Feature_Resolver::Resolve_Static_Entities()
-{
-
-    for (static_ent *e : *this->features->static_entities)
-    {
-        e->resolve_attributes();
-        vec o;
-        o.x = (float)e->x;
-        o.y = (float)e->y;
-        o.z = (float)e->z;
-
-        this->Target_Ray_Trace(o,e->trace);
     }
 }
 
@@ -112,8 +91,7 @@ void Feature_Resolver::Target_Ray_Trace(vec target, traceresult_s *tr)
     vec from;
     from.x = this->features->player1->x;
     from.y = this->features->player1->y;
-    from.z = this->features->player1->z+5.5;
+    from.z = this->features->player1->z+1;
     
     this->TraceLine(from, target, this->features->player1->base_address, true, tr);
-    //this->patricle_trail(1, -500, from, target);
 }
