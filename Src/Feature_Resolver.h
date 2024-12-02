@@ -48,7 +48,7 @@ struct entity
         __uint16_t z = 0x4;
         __uint16_t attr1 = 0x6;
         __uint8_t type = 0x8;
-    }rel_s_offsets;
+    } rel_s_offsets;
     
 
     __uint64_t base_address;
@@ -143,6 +143,7 @@ struct Features
     std::vector<int> connected_nodes;
     std::vector<std::vector<int>> node_adjacency_mat;
     std::vector<int> objective_nodes;
+    std::vector<int> discovery_nodes;
     int current_node;
     bool objective_is_path = false;
 };
@@ -225,7 +226,7 @@ public:
         std::random_device rd;
         std::mt19937 gen(rd());
         
-        float bounds = 75;
+        float bounds = 250;
         std::uniform_real_distribution<float> xdist(features->player1->x-bounds,features->player1->x+bounds);
         std::uniform_real_distribution<float> ydist(features->player1->y-bounds,features->player1->y+bounds);        
         std::uniform_real_distribution<float> zdist(0,9);
@@ -234,7 +235,7 @@ public:
         for(int i = 0; i < nodes; i++)
         {
             vec rndv = {xdist(gen), ydist(gen), zdist(gen)};
-            while (rndv.x > 200 || rndv.y > 200 || rndv.x == 0 || rndv.y == 0)
+            while (rndv.x > bounds || rndv.y > bounds || rndv.x == 0 || rndv.y == 0)
             {
                 rndv = {xdist(gen), ydist(gen), zdist(gen)};
             }
