@@ -1,12 +1,12 @@
 #include "Environment_Interaction.h"
 
-int Environment_Interaction::Keyboard_Event(__uint32_t key)
+int Environment_Interaction::Keyboard_Event(__uint32_t key, __uint32_t type, __uint32_t state)
 {
     SDL_Event event;
-    event.type = this->sdl_util.SDL_KEYDOWN;
+    event.type = type;
 
-    event.key.type = this->sdl_util.SDL_KEYDOWN;
-    event.key.state = this->sdl_util.SDL_PRESSED;
+    event.key.type = type;
+    event.key.state = state;
     event.key.repeat = 0;
     event.key.keysym.sym = key;
     event.key.keysym.scancode = key - this->sdl_util.scancode_offset;

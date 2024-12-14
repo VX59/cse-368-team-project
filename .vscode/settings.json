@@ -135,7 +135,23 @@
     "cinttypes": "cpp",
     "typeinfo": "cpp",
     "variant": "cpp",
-    "*.ipp": "cpp"
+    "*.ipp": "cpp",
+    "csetjmp": "cpp",
+    "barrier": "cpp",
+    "cfenv": "cpp",
+    "cuchar": "cpp",
+    "expected": "cpp",
+    "regex": "cpp",
+    "generator": "cpp",
+    "latch": "cpp",
+    "print": "cpp",
+    "ranges": "cpp",
+    "scoped_allocator": "cpp",
+    "spanstream": "cpp",
+    "stacktrace": "cpp",
+    "syncstream": "cpp",
+    "typeindex": "cpp",
+    "valarray": "cpp"
   },
   "makefile.configureOnOpen": true
 }
