@@ -122,6 +122,10 @@ float flat_distance(vec v1, vec v2) {
 void hook_function() {
     std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log", std::ios::app);
 
+    // giving our boy infinite health + ammo
+    features.player1->set_health(999);
+    features.player1->set_rifle_ammo(99);
+
     float old_obj_dist, obj_dist, obj_velocity;
     hook_util.resolver->Resolve_Dynamic_Entities();
 
@@ -409,7 +413,7 @@ void hook_function() {
         // if player is on our team or dead don't aim at them
         if (ent->team == features.player1->team || ent->health <= 0) {
             // no shooting if we can't see enemy or they are off-screen
-            hook_util.interface->Mouse_Button_Event(hook_util.interface->sdl_util.SDL_MOUSEBUTTONUP, hook_util.interface->sdl_util.SDL_KEYUP);
+            hook_util.interface->Mouse_Button_Event(hook_util.interface->sdl_util.SDL_MOUSEBUTTONUP, hook_util.interface->sdl_util.SDL_RELEASED);
             continue;
         }
 
@@ -430,12 +434,12 @@ void hook_function() {
                 angle.x -= 360;
             }
             features.player1->set_yaw_pitch(angle.x, angle.y);
-            hook_util.interface->Mouse_Button_Event(hook_util.interface->sdl_util.SDL_MOUSEBUTTONDOWN, hook_util.interface->sdl_util.SDL_KEYDOWN);
+            hook_util.interface->Mouse_Button_Event(hook_util.interface->sdl_util.SDL_MOUSEBUTTONDOWN, hook_util.interface->sdl_util.SDL_PRESSED);
             break;
         }
         else {
             // no shooting if we can't see enemy or they are off-screen
-            hook_util.interface->Mouse_Button_Event(hook_util.interface->sdl_util.SDL_MOUSEBUTTONUP, hook_util.interface->sdl_util.SDL_KEYUP);
+            hook_util.interface->Mouse_Button_Event(hook_util.interface->sdl_util.SDL_MOUSEBUTTONUP, hook_util.interface->sdl_util.SDL_RELEASED);
         }
     }
 
@@ -477,7 +481,7 @@ void init()
 
     if (!outFile.is_open()) {
         outFile << "Error: Could not open the log file!" << std::endl;
-        exit(1);  // Exit or handle the error accordingly
+        //exit(1);  // Exit or handle the error accordingly
     }
     // load some sdl library functions from inside ac
     hook_util.handle = dlopen("native_client", RTLD_LAZY | RTLD_NOLOAD);
