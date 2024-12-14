@@ -147,6 +147,8 @@ void hook_function() {
     {   
         // This causes the agent to spasm, but stops a segfault from popping
         // on an empty objective nodes list
+        //
+        // THIS IS WHAT IS CAUSING OCCASIONAL CRASHES (WHEN THERE IS NO IF CHECK)
         if (!features.objective_nodes.empty()) {
             features.current_node = features.objective_nodes.back();
             features.objective_nodes.pop_back();
