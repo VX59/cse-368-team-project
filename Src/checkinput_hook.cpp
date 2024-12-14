@@ -123,13 +123,11 @@ void hook_function() {
     std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log", std::ios::app);
 
     float old_obj_dist, obj_dist, obj_velocity;
+    hook_util.resolver->Resolve_Dynamic_Entities();
 
     if (!features.objective_nodes.empty())
     {
         old_obj_dist = flat_distance(features.node_positions[features.objective_nodes.back()],features.player1->position);
-
-        hook_util.resolver->Resolve_Dynamic_Entities();
-
         obj_dist = flat_distance(features.node_positions[features.objective_nodes.back()],features.player1->position);
     } else 
     {
