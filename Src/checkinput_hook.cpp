@@ -393,7 +393,7 @@ void hook_function() {
         target.z = features.player1->position.z;
         vec angular_displacement = GetRayAngle(player_pos,target);
         angular_displacement.x += 180;
-        if (angular_displacement.x + 360) {
+        if (angular_displacement.x > 360) {
             angular_displacement.x -= 360;
         }
         features.player1->set_yaw_pitch(angular_displacement.x, angular_displacement.y);
