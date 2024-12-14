@@ -314,7 +314,7 @@ void hook_function() {
 
     if (features.objective_nodes.empty())
     {
-        hook_util.interface->Keyboard_Event(sdl_keys.SDLK_w, hook_util.interface->sdl_util.SDL_KEYUP,1);
+        hook_util.interface->Keyboard_Event(sdl_keys.SDLK_w, false);
 
         outFile << "selecting a path" << std::endl;
 
@@ -402,7 +402,7 @@ void hook_function() {
         }
         features.player1->set_yaw_pitch(angular_displacement.x, angular_displacement.y);
 
-        hook_util.interface->Keyboard_Event(sdl_keys.SDLK_w, hook_util.interface->sdl_util.SDL_KEYDOWN,1);
+        hook_util.interface->Keyboard_Event(sdl_keys.SDLK_w, true);
 
         outFile << "P1 pos x: "<< features.current_node << " " << features.player1->position.x << " y: " << features.player1->position.y << "z: " << features.player1->position.z << std::endl;   
     }
@@ -413,7 +413,7 @@ void hook_function() {
         // if player is on our team or dead don't aim at them
         if (ent->team == features.player1->team || ent->health <= 0) {
             // no shooting if we can't see enemy or they are off-screen
-            hook_util.interface->Mouse_Button_Event(hook_util.interface->sdl_util.SDL_MOUSEBUTTONUP, hook_util.interface->sdl_util.SDL_RELEASED);
+            hook_util.interface->Mouse_Button_Event(false);
             continue;
         }
 
@@ -434,12 +434,12 @@ void hook_function() {
                 angle.x -= 360;
             }
             features.player1->set_yaw_pitch(angle.x, angle.y);
-            hook_util.interface->Mouse_Button_Event(hook_util.interface->sdl_util.SDL_MOUSEBUTTONDOWN, hook_util.interface->sdl_util.SDL_PRESSED);
+            hook_util.interface->Mouse_Button_Event(true);
             break;
         }
         else {
             // no shooting if we can't see enemy or they are off-screen
-            hook_util.interface->Mouse_Button_Event(hook_util.interface->sdl_util.SDL_MOUSEBUTTONUP, hook_util.interface->sdl_util.SDL_RELEASED);
+            hook_util.interface->Mouse_Button_Event(false);
         }
     }
 
