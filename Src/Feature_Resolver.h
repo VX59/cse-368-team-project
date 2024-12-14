@@ -99,6 +99,14 @@ struct dynamic_ent : entity
 
     dynamic_ent(__uint64_t base) : entity(base) { };
 
+    void set_health(int v) {
+        *(int*)(base_address+rel_d_offsets.health) = v;
+    }
+
+    void set_rifle_ammo(int v) {
+        *(int*)(base_address+rel_d_offsets.rifle_ammo) = v;
+    }
+
     void set_yaw_pitch(float y, float p) {
         *(float*)(base_address+rel_d_offsets.yaw) = y;
         *(float*)(base_address+rel_d_offsets.pitch) = p;
