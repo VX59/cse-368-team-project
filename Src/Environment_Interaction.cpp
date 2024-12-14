@@ -30,15 +30,14 @@ int Environment_Interaction::Mouse_Motion_Event(__uint32_t dx, __uint32_t dy)
     return this->sdl_util.SDL_PushEvent(&event);
 }
 
-    // no arguments becuase were just telling the game to fire the gun
-int Environment_Interaction::Mouse_Button_Event()
+int Environment_Interaction::Mouse_Button_Event(__uint32_t type, __uint32_t state)
 {
     SDL_Event event;
-    event.type = this->sdl_util.SDL_MOUSEBUTTONDOWN;
+    event.type = type;
 
-    event.button.type = this->sdl_util.SDL_MOUSEBUTTONDOWN;
+    event.button.type = type;
     event.button.button = this->sdl_util.SDL_BUTTON_LEFT;
-    event.button.state = this->sdl_util.SDL_PRESSED;
+    event.button.state = state;
     event.button.clicks = 1;
     this->sdl_util.SDL_GetMouseState(&event.motion.x, &(event.motion.y));    
     event.button.which = this->sdl_util.SDL_TOUCH_MOUSEID;
