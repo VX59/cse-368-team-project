@@ -13,7 +13,6 @@ int Environment_Interaction::Keyboard_Event(__uint32_t key, bool isPressed)
         event.key.type = this->sdl_util.SDL_KEYUP;
         event.key.state = this->sdl_util.SDL_RELEASED;
     }
-
     event.key.repeat = 0;
     event.key.keysym.sym = key;
     event.key.keysym.scancode = key - this->sdl_util.scancode_offset;
