@@ -270,7 +270,6 @@ void hook_function() {
 
         if (node == features.current_node)
         {
-            float distance = sqrtf(pow(features.player1->position.x-node.x,2) + )
             auto it = std::find(features.free_pool.begin(), features.free_pool.end(), 1);
             int idx = std::distance(features.free_pool.begin(), it);
 
