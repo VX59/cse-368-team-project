@@ -4,6 +4,7 @@
 
 class ConditionalAgent
 {
+
 private:
     Features *features;
     Environment_Interaction *interface;

@@ -3,7 +3,7 @@
 # 'injector.sh', it dynamically sets otherwise hardcoded values like
 # function addresses and instruction patch sizes.
 #
-# Not using 'injector.sh' (just 'ac_detour.so') may not work on all AC exes.
+# Not using 'injector.sh' (just 'ac_detour.so') may not work on all AC executables.
 #
 
 import gdb

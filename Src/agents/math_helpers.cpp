@@ -1,10 +1,10 @@
 #include "math_helpers.h"
 
-void WorldToScreen(float x, float y, float z, float *MVP, int screenWidth, int screenHeight, float *screenX, float *screenY) {
-    float mvpX = MVP[0] * x + MVP[4] * y + MVP[8] * z + MVP[12];
-    float mvpY = MVP[1] * x + MVP[5] * y + MVP[9] * z + MVP[13];
-    float mvpZ = MVP[2] * x + MVP[6] * y + MVP[10] * z + MVP[14];
-    float mvpW = MVP[3] * x + MVP[7] * y + MVP[11] * z + MVP[15];
+void WorldToScreen(vec p, float *MVP, int screenWidth, int screenHeight, float *screenX, float *screenY) {
+    float mvpX = MVP[0] * p.x + MVP[4] * p.y + MVP[8] *  p.z + MVP[12];
+    float mvpY = MVP[1] * p.x + MVP[5] * p.y + MVP[9] *  p.z + MVP[13];
+    float mvpZ = MVP[2] * p.x + MVP[6] * p.y + MVP[10] * p.z + MVP[14];
+    float mvpW = MVP[3] * p.x + MVP[7] * p.y + MVP[11] * p.z + MVP[15];
 
     float ndcX = mvpX / mvpW;
     float ndcY = mvpY / mvpW;
