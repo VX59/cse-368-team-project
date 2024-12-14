@@ -403,6 +403,42 @@ void hook_function() {
         outFile << "P1 pos x: "<< features.current_node << " " << features.player1->position.x << " y: " << features.player1->position.y << "z: " << features.player1->position.z << std::endl;   
     }
     // outFile << "graph explored " << connected <<" / " << features.nodes << " : %" << graph_explored << std::endl;
+
+    // aimbot
+    for (dynamic_ent *ent: features.dynamic_entities) {
+        // if player is on our team or dead don't aim at them
+        if (ent->team == features.player1->team || ent->health <= 0) {
+            // no shooting if we can't see enemy or they are off-screen
+            hook_util.interface->Mouse_Button_Event(hook_util.interface->sdl_util.SDL_MOUSEBUTTONUP, hook_util.interface->sdl_util.SDL_KEYUP);
+            continue;
+        }
+
+        // seeing if enemy is on our screen
+        float screenX, screenY = 0;
+        WorldToScreen(ent->position, features.mvpmatrix, features.screenw, features.screenh, &screenX, &screenY);
+        bool onScreen = (0 < screenX && screenX < features.screenw) && (0 < screenY && screenY < features.screenh);
+
+        // seeing if they are actually visible
+        float enemyDistance = GetVectorDistance(features.player1->position, ent->position);
+        float traceDistance = GetVectorDistance(features.player1->position, ent->trace->end);
+        bool isVisible = traceDistance - 2.0f < enemyDistance && enemyDistance < traceDistance + 2.0f;
+
+        if (onScreen && isVisible) {
+            vec angle = GetRayAngle(features.player1->position, ent->position);
+            angle.x += 180;
+            if (angle.x > 360) {
+                angle.x -= 360;
+            }
+            features.player1->set_yaw_pitch(angle.x, angle.y);
+            hook_util.interface->Mouse_Button_Event(hook_util.interface->sdl_util.SDL_MOUSEBUTTONDOWN, hook_util.interface->sdl_util.SDL_KEYDOWN);
+            break;
+        }
+        else {
+            // no shooting if we can't see enemy or they are off-screen
+            hook_util.interface->Mouse_Button_Event(hook_util.interface->sdl_util.SDL_MOUSEBUTTONUP, hook_util.interface->sdl_util.SDL_KEYUP);
+        }
+    }
+
     outFile.close();
 }
 
