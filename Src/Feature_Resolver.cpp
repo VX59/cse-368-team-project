@@ -16,7 +16,12 @@ void Entity_Tracker::Resolve_Dynamic_Entities()
     for (dynamic_ent *e : this->features->dynamic_entities)
     {
         e->resolve_attributes();
-        
+
+        vec o;
+        o.x = e->position.x;
+        o.y = e->position.y;
+        o.z = e->position.z;
+        this->Target_Ray_Trace(o,e->trace);
     }
 }
 
