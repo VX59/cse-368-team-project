@@ -245,5 +245,6 @@ public:
         Add_Node(player1->position, 0);
     
         features->objective_nodes.push_back(0);
+        features->target_ent_idx = -1;
     };
 };  

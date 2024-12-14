@@ -120,20 +120,24 @@ float flat_distance(vec v1, vec v2) {
 }
 
 void hook_function() {
-    std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log", std::ios::app);
+    std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log");
 
     // giving our boy infinite health + ammo
     features.player1->set_health(999);
     features.player1->set_rifle_ammo(99);
 
     float old_obj_dist, obj_dist, obj_velocity;
+    
+    obj_dist = flat_distance(features.node_positions[features.objective_nodes.back()],features.player1->position);
+
     hook_util.resolver->Resolve_Dynamic_Entities();
 
-    if (!features.objective_nodes.empty())
-    {
-        old_obj_dist = flat_distance(features.node_positions[features.objective_nodes.back()],features.player1->position);
-        obj_dist = flat_distance(features.node_positions[features.objective_nodes.back()],features.player1->position);
-    } else 
+    old_obj_dist = flat_distance(features.node_positions[features.objective_nodes.back()],features.player1->position);
+
+    dynamic_ent target_ent = *(features.dynamic_entities[features.target_ent_idx]);
+    features.target = target_ent.position;
+
+    if (features.objective_nodes.empty())
     {
         outFile << "objectives is empty" << std::endl;
         old_obj_dist = 0;
@@ -151,14 +155,15 @@ void hook_function() {
         // on an empty objective nodes list
         //
         // THIS IS WHAT IS CAUSING OCCASIONAL CRASHES (WHEN THERE IS NO IF CHECK)
-        if (!features.objective_nodes.empty()) {
+        if (!features.objective_nodes.empty())
+        {
             features.current_node = features.objective_nodes.back();
-            features.objective_nodes.pop_back();
+            features.objective_nodes.pop_back();           
         }
 
         outFile << "Exploring the map" << std::endl;
 
-        int k=sqrtf(features.nodes);
+        int k=1;
 
         std::vector<float> distances;
 
@@ -314,7 +319,7 @@ void hook_function() {
 
     if (features.objective_nodes.empty())
     {
-        hook_util.interface->Keyboard_Event(sdl_keys.SDLK_w, false);
+        hook_util.interface->Keyboard_Event(sdl_keys.SDLK_w, hook_util.interface->sdl_util.SDL_KEYUP, hook_util.interface->sdl_util.SDL_RELEASED);
 
         outFile << "selecting a path" << std::endl;
 
@@ -400,12 +405,18 @@ void hook_function() {
         if (angular_displacement.x > 360) {
             angular_displacement.x -= 360;
         }
+
         features.player1->set_yaw_pitch(angular_displacement.x, angular_displacement.y);
 
-        hook_util.interface->Keyboard_Event(sdl_keys.SDLK_w, true);
+        hook_util.interface->Keyboard_Event(sdl_keys.SDLK_w, hook_util.interface->sdl_util.SDL_KEYDOWN,1);
 
-        outFile << "P1 pos x: "<< features.current_node << " " << features.player1->position.x << " y: " << features.player1->position.y << "z: " << features.player1->position.z << std::endl;   
+        float enemy_dist = flat_distance(features.player1->position, features.target);
+
+        outFile << "Target Distance " << enemy_dist << std::endl;
+        outFile << "P1 pos x: "<< features.current_node << " " << features.player1->position.x << " y: " << features.player1->position.y << " z: " << features.player1->position.z << std::endl;   
+        outFile << "Enemy pos: " << features.target.x << " " << features.target.y << std::endl;
     }
+
     // outFile << "graph explored " << connected <<" / " << features.nodes << " : %" << graph_explored << std::endl;
 
     // aimbot
@@ -527,7 +538,7 @@ void init()
         std::uniform_int_distribution<int> dist(0,features.dynamic_entities.size()-1);
         int rndx = dist(gen);
         dynamic_ent target_ent = *(features.dynamic_entities[rndx]);
-
+        features.target_ent_idx = rndx;
         features.target = target_ent.position;
         outFile.close();
     } else
