@@ -85,4 +85,5 @@ struct SDL_keys
     __uint32_t SDLK_d = 0x0064;
     __uint32_t SDLK_r = 0x0072;
     __uint32_t SDLK_q = 0x0071;
+    __uint32_t SDLK_SPACE = 0x0020;
 };

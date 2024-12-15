@@ -99,6 +99,14 @@ struct dynamic_ent : entity
 
     dynamic_ent(__uint64_t base) : entity(base) { };
 
+    void set_health(int v) {
+        *(int*)(base_address+rel_d_offsets.health) = v;
+    }
+
+    void set_rifle_ammo(int v) {
+        *(int*)(base_address+rel_d_offsets.rifle_ammo) = v;
+    }
+
     void set_yaw_pitch(float y, float p) {
         *(float*)(base_address+rel_d_offsets.yaw) = y;
         *(float*)(base_address+rel_d_offsets.pitch) = p;
@@ -163,12 +171,14 @@ public:
     void (*patricle_trail)(int type, int fade, vec s, vec e);
     void (*drawradarent)(float x, float y, float yaw, int col, int row, float iconsize, bool pulse, const char *label,...);
     // resolve player entity features including player1
-    void Resolve_Dynamic_Entities();
+    void Update_Player_Entities();
     // traces rays from player1
     void TNB_Ray_Trace();
     void Target_Ray_Trace(vec target, traceresult_s *tr);
 
-    void Add_Node(vec position, int idx);
+    void Add_Node(vec position, int idx, int type);
+    void Remove_Node(int idx);
+    int Path_Find(int S, int T);
 
     Entity_Tracker(__uint64_t p1, __uint64_t players, __uint64_t ents, Features *F)
     {
@@ -234,8 +244,9 @@ public:
         std::vector<std::vector<int>> mat(features->free_nodes, std::vector<int>(features->free_nodes,0));
         features->node_adjacency_mat = mat;
 
-        Add_Node(player1->position, 0);
+        Add_Node(player1->position, 0, 1);
     
         features->objective_nodes.push_back(0);
+        features->target_ent_idx = -1;
     };
 };  
