@@ -10,9 +10,11 @@
 #include <queue>
 #include "agents/conditional/conditional_agent.h"
 #include "agents/math_helpers.h"
+#include "hunter_agent.h"
 
 SDL_keys sdl_keys;
 Features features;
+Hunter_Agent *Agent;
 /**
  * Full addresses to AC functions in memory, by default are hardcoded to
  * relative addresses but will get dynamically changed by injector script.
@@ -55,369 +57,14 @@ struct
     AC_detour detour;
 } hook_util;
 
-
-bool agentSet = false;
-
-// start with bfs
-int BFS(int S, int T)
-{
-    std::vector<std::vector<int>> Graph = features.node_adjacency_mat;
-    std::unordered_map<int,int> Parent;
-    std::queue<int> Queue;
-    std::vector<bool> Discovered(Graph.front().size(),false);
-
-    Queue.push(S);
-    Discovered[S] = true;
-    Parent[S] = -1;
-
-    int current;
-    while (!Queue.empty())
-    {
-        current = Queue.front();
-        Queue.pop();
-
-        if (current == T)
-        {
-            break;
-        }
-
-        for (long unsigned int i = 0; i < features.node_adjacency_mat[current].size(); i++)
-        {            
-            int n = features.node_adjacency_mat[current][i] | features.node_adjacency_mat[i][current];            
-            if (n > 0 && !Discovered[i])
-            {
-                Discovered[i] = true;
-                Queue.push(i);
-                Parent[i] = current;
-            }
-        }
-    }
-
-    if (current != T)
-    {
-        return -1;
-    }
-
-    // recover path
-    int i = 0;
-    for (int node = T; node != -1; node = Parent[node])
-    {
-        if (node < features.nodes && node != -1)
-        {
-            features.objective_nodes.push_back(node);
-            i++;
-        }
-    }
-    features.objective_nodes.pop_back();
-    features.objective_is_path = true;
-    return i;
-}
-
-// super evil code >:)
-
-float flat_distance(vec v1, vec v2) {
-    return sqrt(pow(v2.x - v1.x, 2) + pow(v2.y - v1.y, 2));
-}
-
 void hook_function() {
-    std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log");
+    std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log",std::ios::app);
 
     // giving our boy infinite health + ammo
     features.player1->set_health(999);
     features.player1->set_rifle_ammo(99);
 
-    float old_obj_dist, obj_dist, obj_velocity;
-    
-    obj_dist = flat_distance(features.node_positions[features.objective_nodes.back()],features.player1->position);
-
-    hook_util.resolver->Resolve_Dynamic_Entities();
-
-    old_obj_dist = flat_distance(features.node_positions[features.objective_nodes.back()],features.player1->position);
-
-    dynamic_ent target_ent = *(features.dynamic_entities[features.target_ent_idx]);
-    features.target = target_ent.position;
-
-    if (features.objective_nodes.empty())
-    {
-        outFile << "objectives is empty" << std::endl;
-        old_obj_dist = 0;
-        obj_dist = 0;
-    }
-
-    obj_velocity = old_obj_dist - obj_dist;
-    outFile << "objective velocity " << fabs(obj_velocity) << " objective dist " << obj_dist << std::endl;
-
-    int prox = 2;
-
-    if (obj_dist < prox)
-    {   
-        // This causes the agent to spasm, but stops a segfault from popping
-        // on an empty objective nodes list
-        //
-        // THIS IS WHAT IS CAUSING OCCASIONAL CRASHES (WHEN THERE IS NO IF CHECK)
-        if (!features.objective_nodes.empty())
-        {
-            features.current_node = features.objective_nodes.back();
-            features.objective_nodes.pop_back();           
-        }
-
-        outFile << "Exploring the map" << std::endl;
-
-        int k=1;
-
-        std::vector<float> distances;
-
-        for (int i = 0; i < features.connected_pool.size(); i++)
-        {
-            if (i == features.current_node)
-            {
-                distances.push_back(1e7);
-                continue;
-            }
-            distances.push_back(flat_distance(features.node_positions[features.current_node], features.node_positions[i]));
-        }
-        
-        outFile << "sorting nodes" << std::endl;
-
-        std::vector<int> indices(features.connected_pool.size());
-
-        std::iota(indices.begin(), indices.end(), 0);
-        std::sort(indices.begin(), indices.end(), [&distances](float i1, float i2) {
-            return distances[i1] < distances[i2];
-        });
-
-        //Return the closest k nodes
-
-        std::vector<int> min_nodes(indices.begin(), indices.begin() + k);
-
-        for (int m : min_nodes)
-        {
-            outFile << "m " << m << std::endl;
-        }
-
-        // draw rays to closest k nodes count how many are visible
-        for (int i = 0; i < k; i++)
-        {
-            if (min_nodes[i] < features.nodes && min_nodes[i] != features.current_node)
-            {
-                vec node = features.node_positions[min_nodes[i]];
-                if (node.x == -1) continue;
-                traceresult_s tr;
-                hook_util.resolver->Target_Ray_Trace(node, &tr);
-
-                if (!tr.collided)
-                {
-                    if (features.connected_pool[min_nodes[i]] == 0)
-                    {
-                        features.node_adjacency_mat[min_nodes[i]][features.current_node] = 1;
-                        features.node_adjacency_mat[features.current_node][min_nodes[i]] = 1;
-                    }
-                }
-            }
-        }
- 
-        // if we couldnt find any visible nodes draw a ray in a random yaw and go halfway
-        // if there are unallocated nodes we can add that point to the graph
-        if (features.objective_nodes.empty())
-        {
-            outFile << "scanning environment " << std::endl;
-            vec from = features.player1->position;
-            from.z += 5.5;
-
-            std::random_device rd;
-            std::mt19937 gen(rd());
-            std::uniform_real_distribution<float> ryaw(0,360);
-
-            vec to;
-            
-            for (int i = 0; i < k; i++)
-            {
-                if (features.free_nodes == 0) break;
-
-                float scan_distance = 0;
-
-                while (scan_distance < pow(prox,2))
-                {
-                    double yaw = (ryaw(gen)) * (M_PI/180.f);
-                    double pitch = 0;
-                    float epsilon = 0.15;
-                    // calculate 100 cube ray
-                    float limit = 1000.f;
-
-                    to.x = from.x + (cos(yaw) * cos(pitch)) * limit;
-                    to.y = from.y + (sin(yaw) * cos(pitch)) * limit;
-                    to.z = from.z + sin(pitch) * limit;
-
-                    traceresult_s tr;
-                    
-                    hook_util.resolver->Target_Ray_Trace(to, &tr);
-
-                    vec delta = {(tr.end.x-from.x)/2, (tr.end.y-from.y)/2, from.z};
-                    scan_distance = sqrtf(pow(delta.x,2) + pow(delta.y,2));
-
-                    to = {from.x + delta.x, from.y + delta.y, from.z};
-                }
-
-                auto it = std::find(features.free_pool.begin(), features.free_pool.end(), 1);
-                int idx = std::distance(features.free_pool.begin(), it);
-
-                hook_util.resolver->Add_Node(to, idx);
-                features.node_adjacency_mat[idx][features.current_node] = 1;
-                features.node_adjacency_mat[features.current_node][idx] = 1;
-            }
-        }
-    }   
-    vec default_pos = {1e7,1e7,1e7};
-    // only happens when were stuck away from a node
-    if (obj_velocity == 0 && obj_dist >= prox && !features.objective_nodes.empty())
-    {
-        outFile << "evaluating objective velocity " << std::endl;
-        outFile << "cleared objectives .. proceed to find a new path" << std::endl;
-
-        int node = features.objective_nodes.back();
-        features.objective_nodes.clear();
-
-        if (node == features.current_node)
-        {
-            auto it = std::find(features.free_pool.begin(), features.free_pool.end(), 1);
-            int idx = std::distance(features.free_pool.begin(), it);
-
-            hook_util.resolver->Add_Node(features.player1->position, idx);
-            features.current_node = idx;
-            outFile << "adding a new node " << idx << std::endl;
-
-        }
-        else
-        {
-            outFile << "PRUNING NODE " << node << " current node " << features.current_node << std::endl;
-            vec default_pos = {1e7,1e7,1e7};
-
-            // unadd the node
-            for (int i = 0; i < features.node_adjacency_mat.size(); i++)
-            {
-                features.node_adjacency_mat[node][i] = 0;
-                features.node_adjacency_mat[i][node] = 0;
-            }
-
-            features.node_positions[node] = default_pos;
-            features.connected_pool[node] = 0;
-            features.free_pool[node] = 1;
-            features.nodes --;
-            features.free_nodes ++;     
-        }
-    }   
-
-    if (!features.objective_nodes.empty())
-    {
-        outFile << features.objective_nodes.size() << " OBJECTIVES" << std::endl;
-        for (int o : features.objective_nodes)
-        {
-            vec pos = features.node_positions[o];
-            outFile << o << " x: " << pos.x << " y: " << pos.y << "z: " << pos.z << std::endl;
-        }
-    }
-
-    if (features.objective_nodes.empty())
-    {
-        hook_util.interface->Keyboard_Event(sdl_keys.SDLK_w, hook_util.interface->sdl_util.SDL_KEYUP, hook_util.interface->sdl_util.SDL_RELEASED);
-
-        outFile << "selecting a path" << std::endl;
-
-        std::vector<int> connected_nodes;
-        for (int i = 0; i < features.nodes; i++)
-        {
-            if (features.connected_pool[i] > 0 && i != features.current_node)
-            {
-                connected_nodes.push_back(i);
-            }
-        }
-        if (connected_nodes.empty())
-        {
-            outFile << "no connected nodes" << std::endl;
-            return;
-        }
-
-        outFile << "current node " << features.current_node << std::endl;
-
-        vec cur_pos, nex_pos;
-        int best_pick;
-
-        outFile << "target position " << features.target.x << " " << features.target.y << std::endl;
-        if(features.target.x != default_pos.x)
-        {
-            outFile << "estimating path to target" << std::endl;
-
-            std::vector<float> distances;
-            for (int i = 0; i < features.connected_pool.size(); i++)
-            {
-                if (i == features.current_node || features.connected_pool[i] == 0)
-                {
-                    distances.push_back(1e7);
-                } 
-                else
-                {
-                    distances.push_back(flat_distance(features.target, features.node_positions[i]));
-                }
-            }
-            std::vector<int> indices(distances.size());
-
-            std::iota(indices.begin(), indices.end(), 0);
-            std::sort(indices.begin(), indices.end(), [&distances](float i1, float i2) {
-                return distances[i1] < distances[i2];
-            });
-
-
-            best_pick = *indices.begin();
-            outFile << "closest distance " << distances[best_pick] << std::endl;
-            if(distances[best_pick] > 1e6)
-            {
-                outFile << "undiscovered" << std::endl;
-                return;
-            }
-
-            outFile << "next node is " << best_pick << std::endl;
-        } else
-        {
-            std::random_device rd;
-            std::mt19937 gen(rd());
-            std::uniform_int_distribution<> dist(0, connected_nodes.size()-1);
-            best_pick = dist(gen);
-        }
-
-        if (best_pick != features.current_node)
-        {
-            cur_pos = features.node_positions[features.current_node];
-            nex_pos = features.node_positions[best_pick];
-
-            outFile << "BFSing from " << features.current_node << " " << cur_pos.x << " " << cur_pos.y << " to " << best_pick << " " << nex_pos.x << " " << nex_pos.y << std::endl;
-            int i = BFS(features.current_node, best_pick);
-            outFile << "path length " << i << std::endl;
-        }
-    }
-
-    if (!features.objective_nodes.empty())
-    {
-        vec player_pos = {features.player1->position.x, features.player1->position.y, features.player1->position.z};
-        vec target = features.node_positions[features.objective_nodes.back()];
-        target.z = features.player1->position.z;
-        vec angular_displacement = GetRayAngle(player_pos,target);
-        angular_displacement.x += 180;
-        if (angular_displacement.x > 360) {
-            angular_displacement.x -= 360;
-        }
-
-        features.player1->set_yaw_pitch(angular_displacement.x, angular_displacement.y);
-
-        hook_util.interface->Keyboard_Event(sdl_keys.SDLK_w, hook_util.interface->sdl_util.SDL_KEYDOWN,1);
-
-        float enemy_dist = flat_distance(features.player1->position, features.target);
-
-        outFile << "Target Distance " << enemy_dist << std::endl;
-        outFile << "P1 pos x: "<< features.current_node << " " << features.player1->position.x << " y: " << features.player1->position.y << " z: " << features.player1->position.z << std::endl;   
-        outFile << "Enemy pos: " << features.target.x << " " << features.target.y << std::endl;
-    }
-
-    // outFile << "graph explored " << connected <<" / " << features.nodes << " : %" << graph_explored << std::endl;
+    Agent->Navigate();
 
     // aimbot
     for (dynamic_ent *ent: features.dynamic_entities) {
@@ -453,7 +100,6 @@ void hook_function() {
             hook_util.interface->Mouse_Button_Event(false);
         }
     }
-
     outFile.close();
 }
 
@@ -516,8 +162,6 @@ void init()
     hook_util.detour = AC_detour(AC_function_addresses.checkinput, (__uint64_t)&trampoline_function);
     outFile << "successfully hooked" << std::endl;
 
-    // initiate the agent
-
     // intiate the feature resolver and grab some functions from the game
     hook_util.resolver = new Entity_Tracker(AC_symbol_addresses.player1, AC_symbol_addresses.players, AC_symbol_addresses.ents, &features);
     features.screenw = *(__uint64_t *)AC_symbol_addresses.screenw;
@@ -529,24 +173,10 @@ void init()
     hook_util.resolver->drawradarent = (void (*)(float x, float y, float yaw, int col, int row, float iconsize, bool pulse, const char *label,...))AC_function_addresses.drawradarent;
     
     outFile << "enemies " << features.dynamic_entities.size() << std::endl;
-    outFile << "initiating navigation" << std::endl;
-    if(!features.dynamic_entities.empty())
-    {
-        outFile << "searching for a target" << std::endl;
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_int_distribution<int> dist(0,features.dynamic_entities.size()-1);
-        int rndx = dist(gen);
-        dynamic_ent target_ent = *(features.dynamic_entities[rndx]);
-        features.target_ent_idx = rndx;
-        features.target = target_ent.position;
-        outFile.close();
-    } else
-    {
-        outFile << "no entities found to target .. proceeding to explore" << std::endl;
-        vec default_pos = {1e7,1e7,1e7};
-        features.target = default_pos;
-    }
+
+    Agent = new Hunter_Agent(hook_util.resolver, hook_util.interface);
+
+    outFile << "initiated hunter agent" << std::endl;
 
     outFile.close();
 }

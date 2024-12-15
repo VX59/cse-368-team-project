@@ -10,7 +10,7 @@
 #include <iostream>
 
 // resolves the player entity list
-void Entity_Tracker::Resolve_Dynamic_Entities()
+void Entity_Tracker::Update_Player_Entities()
 {
     this->features->player1->resolve_attributes();
     for (dynamic_ent *e : this->features->dynamic_entities)
@@ -103,4 +103,76 @@ void Entity_Tracker::Add_Node(vec position, int idx)
     features->free_pool[idx] = 0;
     features->nodes ++;
     features->free_nodes --;
+}
+
+void Entity_Tracker::Remove_Node(int idx)
+{
+    vec default_pos = {1e7,1e7,1e7};
+
+    // unadd the node
+    for (int i = 0; i < features->node_adjacency_mat.size(); i++)
+    {
+        features->node_adjacency_mat[idx][i] = 0;
+        features->node_adjacency_mat[i][idx] = 0;
+    }
+
+    features->node_positions[idx] = default_pos;
+    features->connected_pool[idx] = 0;
+    features->free_pool[idx] = 1;
+    features->nodes --;
+    features->free_nodes ++;   
+}
+
+int Entity_Tracker::Path_Find(int S, int T)
+{
+    std::vector<std::vector<int>> Graph = features->node_adjacency_mat;
+    std::unordered_map<int,int> Parent;
+    std::queue<int> Queue;
+    std::vector<bool> Discovered(Graph.front().size(),false);
+
+    Queue.push(S);
+    Discovered[S] = true;
+    Parent[S] = -1;
+
+    int current;
+    while (!Queue.empty())
+    {
+        current = Queue.front();
+        Queue.pop();
+
+        if (current == T)
+        {
+            break;
+        }
+
+        for (long unsigned int i = 0; i < features->node_adjacency_mat[current].size(); i++)
+        {            
+            int n = features->node_adjacency_mat[current][i] | features->node_adjacency_mat[i][current];            
+            if (n > 0 && !Discovered[i])
+            {
+                Discovered[i] = true;
+                Queue.push(i);
+                Parent[i] = current;
+            }
+        }
+    }
+
+    if (current != T)
+    {
+        return -1;
+    }
+
+    // recover path
+    int i = 0;
+    for (int node = T; node != -1; node = Parent[node])
+    {
+        if (node < features->nodes && node != -1)
+        {
+            features->objective_nodes.push_back(node);
+            i++;
+        }
+    }
+    features->objective_nodes.pop_back();
+    features->objective_is_path = true;
+    return i;
 }

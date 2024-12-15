@@ -171,12 +171,14 @@ public:
     void (*patricle_trail)(int type, int fade, vec s, vec e);
     void (*drawradarent)(float x, float y, float yaw, int col, int row, float iconsize, bool pulse, const char *label,...);
     // resolve player entity features including player1
-    void Resolve_Dynamic_Entities();
+    void Update_Player_Entities();
     // traces rays from player1
     void TNB_Ray_Trace();
     void Target_Ray_Trace(vec target, traceresult_s *tr);
 
     void Add_Node(vec position, int idx);
+    void Remove_Node(int idx);
+    int Path_Find(int S, int T);
 
     Entity_Tracker(__uint64_t p1, __uint64_t players, __uint64_t ents, Features *F)
     {
