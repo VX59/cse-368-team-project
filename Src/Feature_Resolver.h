@@ -149,7 +149,7 @@ struct Features
     float *mvpmatrix;
 
     // for exploration
-    int free_nodes = 1024;
+    int free_nodes = 2048;
     int nodes = 0;
     std::vector<vec> node_positions;
     std::vector<int> free_pool;

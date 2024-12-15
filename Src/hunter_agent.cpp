@@ -296,7 +296,7 @@ void Hunter_Agent::Navigate()
         }
 
         outFile << "probing the graph" << std::endl;
-        int k = 4;
+        int k = 2;
         
         std::vector<int> indices = sort_nodes(tracker->features->node_positions[curr_node]);
         std::vector<int> min_nodes(indices.begin(), indices.begin() + k);
@@ -336,14 +336,26 @@ void Hunter_Agent::Navigate()
             jump_node_request = true;
             jump_status = true;
             jump_delta = objective_vel;
+
             if (tracker->features->free_nodes == 0)
             {   
                 Prune_Graph();
-            }      
-            auto it = std::find(tracker->features->free_pool.begin(), tracker->features->free_pool.end(), 1);
-            jump_node_idx = std::distance(tracker->features->free_pool.begin(), it)-1;
+            }    
 
-            tracker->Add_Node(tracker->features->player1->position, jump_node_idx, -1); // type 7 for jump node
+            auto it = std::find(tracker->features->free_pool.begin(), tracker->features->free_pool.end(), 1);
+
+            if (it != tracker->features->free_pool.end())
+            {
+                outFile << "allocated jump node" << std::endl;
+                jump_node_idx = std::distance(tracker->features->free_pool.begin(), it);
+                tracker->Add_Node(tracker->features->player1->position, jump_node_idx, 1); // type 7 for jump node
+            } else 
+            {
+                outFile << "Unable to allocate jump node" << std::endl;
+                jump_node_request = false;
+                jump_status = false;
+                jump_delta = objective_vel;                
+            }
         } else
         {
             outFile << "Processing a Jump Node request " << std::endl;
@@ -376,7 +388,6 @@ void Hunter_Agent::Navigate()
                 {
                     tracker->features->node_adjacency_mat[jump_node_idx][tracker->features->objective_nodes.back()] = -1;
                     tracker->features->node_adjacency_mat[tracker->features->objective_nodes.back()][jump_node_idx] = -1;
-                    tracker->features->objective_nodes.push_back(jump_node_idx);
                 }
                 outFile << "3rd" << std::endl;
 
