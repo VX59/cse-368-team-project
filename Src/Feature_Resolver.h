@@ -176,7 +176,7 @@ public:
     void TNB_Ray_Trace();
     void Target_Ray_Trace(vec target, traceresult_s *tr);
 
-    void Add_Node(vec position, int idx);
+    void Add_Node(vec position, int idx, int type);
     void Remove_Node(int idx);
     int Path_Find(int S, int T);
 
@@ -244,7 +244,7 @@ public:
         std::vector<std::vector<int>> mat(features->free_nodes, std::vector<int>(features->free_nodes,0));
         features->node_adjacency_mat = mat;
 
-        Add_Node(player1->position, 0);
+        Add_Node(player1->position, 0, 1);
     
         features->objective_nodes.push_back(0);
         features->target_ent_idx = -1;

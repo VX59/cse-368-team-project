@@ -96,10 +96,10 @@ void Entity_Tracker::Target_Ray_Trace(vec target, traceresult_s *tr)
     this->TraceLine(from, target, this->features->player1->base_address, true, tr);
 }
 
-void Entity_Tracker::Add_Node(vec position, int idx)
+void Entity_Tracker::Add_Node(vec position, int idx, int type)
 {
     features->node_positions[idx] = position;
-    features->connected_pool[idx] = 1;
+    features->connected_pool[idx] = type;
     features->free_pool[idx] = 0;
     features->nodes ++;
     features->free_nodes --;

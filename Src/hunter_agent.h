@@ -35,6 +35,14 @@ public:
             tracker->features->target = default_pos;
         }
         outFile.close();
+
+        jump_node_request = false;
+        jump_node_status = false;
+        jump_delta = 0;
+        jump_node_idx = -1;
+        jump_tick_counter = 0;
+        jump_status = false;
+
     };
 
     void Navigate();
@@ -45,6 +53,14 @@ private:
 
     float old_objective_dist, objective_dist, objective_vel;
     float prox = 2;
+
+    bool jump_node_request;
+    bool jump_node_status;
+    bool jump_status;
+    float jump_delta;
+    float jump_node_idx;
+    int jump_tick_counter;
+
 
     static float flat_distance(vec v1, vec v2);
     std::vector<int> sort_nodes(vec from);
