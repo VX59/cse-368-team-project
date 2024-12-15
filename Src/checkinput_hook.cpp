@@ -69,12 +69,16 @@ void hook_function() {
     // aimbot
     for (dynamic_ent *ent: features.dynamic_entities) {
         // if player is on our team or dead don't aim at them
-        if (ent->team == features.player1->team || ent->health <= 0) {
+        // if (ent->team == features.player1->team || ent->health <= 0) {
+        //     // no shooting if we can't see enemy or they are off-screen
+        //     hook_util.interface->Mouse_Button_Event(false);
+        //     continue;
+        // }
+        if (ent->health <= 0) {
             // no shooting if we can't see enemy or they are off-screen
             hook_util.interface->Mouse_Button_Event(false);
             continue;
         }
-
         // seeing if enemy is on our screen
         float screenX, screenY = 0;
         WorldToScreen(ent->position, features.mvpmatrix, features.screenw, features.screenh, &screenX, &screenY);
