@@ -58,6 +58,7 @@ void Hunter_Agent::Update_Objective_Velocity()
 void Hunter_Agent::Update_Target_Position()
 {
     std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log",std::ios::app);
+    outFile << "evaluating enemy positions" << std::endl;
 
     // picking the closest target
     std::vector<float>distances;
@@ -67,18 +68,23 @@ void Hunter_Agent::Update_Target_Position()
         distances.push_back(flat_distance(tracker->features->player1->position, player_ent->position));
     }
 
-    std::vector<int> indices(distances.size());
-    std::iota(indices.begin(), indices.end(), 0);
-    std::sort(indices.begin(), indices.end(), [&distances](float i1, float i2) {
-        return distances[i1] < distances[i2];
-    });
-    int min_player = indices[0];
-    tracker->features->target = tracker->features->dynamic_entities[min_player]->position;
+    if (!distances.empty())
+    {
+        std::vector<int> indices(distances.size());
+        std::iota(indices.begin(), indices.end(), 0);
+        std::sort(indices.begin(), indices.end(), [&distances](float i1, float i2) {
+            return distances[i1] < distances[i2];
+        });
+        int min_player = indices[0];
+        tracker->features->target = tracker->features->dynamic_entities[min_player]->position;
 
-    outFile << "targeting enemy #" << min_player << std::endl;
+        outFile << "targeting enemy #" << min_player << std::endl;
+    } else
+    {
+        outFile << "noone to target" << std::endl;
+    }
 
     outFile.close();
-
 }
 
 void Hunter_Agent::Discover_Routes(std::vector<int> min_nodes)
@@ -112,8 +118,7 @@ void Hunter_Agent::Prune_Graph()
     std::ofstream outFile("/home/jacob/UB/cse368/cse-368-team-project/ac_detour.log",std::ios::app);
    // find k nodes with highest density;
     int k = sqrtf(tracker->features->connected_pool.size());
-    std::vector<int> indices;
-    std::vector<float> cardinalities;
+    std::vector<float> densities; 
     vec default_pos = {1e7,1e7,1e7};
 
     int curr_node = tracker->features->current_node;
@@ -123,24 +128,25 @@ void Hunter_Agent::Prune_Graph()
     outFile << "locating densest nodes and removing them" << std::endl;
     for (int i = 0; i < pool_size; i++)
     {
-        if (pool_size)
+        if (i != curr_node)
         {
+            int card = 0;
             float dist = 0.0f;
             for(int j = 0; j < pool_size; j++)
             {
                 if (tracker->features->connected_pool[j])
                 {
-                    dist += tracker->features->node_adjacency_mat[i][j];
+                    if (tracker->features->node_adjacency_mat[i][j] != 0) card += 1;
+                    dist += pow(flat_distance(tracker->features->node_positions[i], tracker->features->node_positions[j]),2);
                 }
             }
-            cardinalities.push_back(dist);
-            indices.push_back(i);
+            densities.push_back(dist*card);
         }
     }
-    
+    std::vector<int> indices(densities.size());
     std::iota(indices.begin(), indices.end(), 0);
-    std::sort(indices.begin(), indices.end(), [&cardinalities](float i1, float i2) {
-        return cardinalities[i1] < cardinalities[i2];
+    std::sort(indices.begin(), indices.end(), [&densities](float i1, float i2) {
+        return densities[i1] < densities[i2];
     });
     
     std::vector<int> min_nodes(indices.begin(), indices.begin() + k);
@@ -192,7 +198,7 @@ void Hunter_Agent::Scan_Environment(int k, bool add_obj)
             
             tracker->Target_Ray_Trace(to, &tr);
 
-            vec delta = {(tr.end.x-from.x)/2, (tr.end.y-from.y)/2, from.z};
+            vec delta = {(tr.end.x-from.x)*2.0/3.0, (tr.end.y-from.y)*2.0/3.0, from.z};
             scan_distance = sqrtf(pow(delta.x,2) + pow(delta.y,2));
 
             to = {from.x + delta.x, from.y + delta.y, from.z};
@@ -206,16 +212,16 @@ void Hunter_Agent::Scan_Environment(int k, bool add_obj)
             tracker->Add_Node(to, idx, 1);
             tracker->features->node_adjacency_mat[idx][curr_node] = 1;
             tracker->features->node_adjacency_mat[curr_node][idx] = 1;
+            if (add_obj)
+            {
+                outFile << "setting objective to " << idx << std::endl;
+                tracker->features->objective_nodes.push_back(idx);
+            }
+            outFile << "allocated node " << idx << std::endl;
         } else
         {
             outFile << "unable to allocate the node not spots left" << std::endl;
-        }
-
-
-        if (add_obj)
-        {
-            outFile << "setting objective to " << idx << std::endl;
-            tracker->features->objective_nodes.push_back(idx);
+            break;
         }
     }
     outFile.close();
@@ -271,6 +277,8 @@ void Hunter_Agent::Navigate()
     vec default_pos = {1e7,1e7,1e7};
 
     jump_status = false;
+    outFile << "checking if reached objective" << std::endl;
+
     if (objective_dist < prox)
     {
         if (!tracker->features->objective_nodes.empty())
@@ -280,15 +288,15 @@ void Hunter_Agent::Navigate()
         }
         
         curr_node = tracker->features->current_node;
-        if (tracker->features->connected_pool[curr_node] == -1)
+        outFile << "reached an objective , current node " << curr_node << std::endl;
+        if (curr_node < 0)
         {
-            outFile << "Reached a jump node" << std::endl;
-            
-            jump_status = true;
+            outFile << "invalid current node" << std::endl;
+            return;
         }
 
         outFile << "probing the graph" << std::endl;
-        int k = 4;
+        int k = 2;
         
         std::vector<int> indices = sort_nodes(tracker->features->node_positions[curr_node]);
         std::vector<int> min_nodes(indices.begin(), indices.begin() + k);
@@ -298,7 +306,7 @@ void Hunter_Agent::Navigate()
         if (tracker->features->objective_nodes.empty())
         {
 
-            if (tracker->features->free_nodes == 0)
+            if (tracker->features->free_nodes < k)
             {   
                 outFile << "pruning graph" << std::endl;
                 Prune_Graph();
@@ -306,7 +314,18 @@ void Hunter_Agent::Navigate()
             Scan_Environment(k, false);
         }        
     }
+
+    if (objective_dist < pow(prox,2))
+    {
+        if (tracker->features->connected_pool[curr_node] == -1)
+        {
+            outFile << "Reached a jump node" << std::endl;
+            
+            jump_status = true;
+        }
+    }
     
+    outFile << "checking if stuck on a path" << std::endl;    
     if (objective_vel >= 0 && objective_vel < 0.0001 && objective_dist >= prox && !tracker->features->objective_nodes.empty())
     {
         // first place a jump node request and jump
@@ -317,61 +336,92 @@ void Hunter_Agent::Navigate()
             jump_node_request = true;
             jump_status = true;
             jump_delta = objective_vel;
+
             if (tracker->features->free_nodes == 0)
             {   
                 Prune_Graph();
-            }      
-            auto it = std::find(tracker->features->free_pool.begin(), tracker->features->free_pool.end(), 1);
-            jump_node_idx = std::distance(tracker->features->free_pool.begin(), it);
+            }    
 
-            tracker->Add_Node(tracker->features->player1->position, jump_node_idx, -1); // type 7 for jump node
+            auto it = std::find(tracker->features->free_pool.begin(), tracker->features->free_pool.end(), 1);
+
+            if (it != tracker->features->free_pool.end())
+            {
+                outFile << "allocated jump node" << std::endl;
+                jump_node_idx = std::distance(tracker->features->free_pool.begin(), it);
+                tracker->Add_Node(tracker->features->player1->position, jump_node_idx, 1); // type 7 for jump node
+            } else 
+            {
+                outFile << "Unable to allocate jump node" << std::endl;
+                jump_node_request = false;
+                jump_status = false;
+                jump_delta = objective_vel;                
+            }
         } else
         {
             outFile << "Processing a Jump Node request " << std::endl;
         }
     }
 
+    outFile << "checking jump node request" << std::endl;
+
     if (jump_node_request)
     {
         jump_delta += objective_vel;
         if (jump_delta > 0.5) jump_node_status = true;
 
-        if (jump_tick_counter == 32)
+        if (jump_tick_counter == 64)
         {
             if (jump_node_status)
             {
                 outFile << "Jump Node Request Accepted .. Recongiguring Graph" << std::endl;
                 // in the adjacency matrix connect the current node to the jump node and the objective to the jump node
                 // also remove the connection between the current and objective nodes
-                tracker->features->node_adjacency_mat[jump_node_idx][curr_node] = -1;
-                tracker->features->node_adjacency_mat[curr_node][jump_node_idx] = -1;
+                outFile << "1st" << std::endl;
+                if (jump_node_idx > -1 && curr_node > -1)
+                {
+                    tracker->features->node_adjacency_mat[jump_node_idx][curr_node] = -1;
+                    tracker->features->node_adjacency_mat[curr_node][jump_node_idx] = -1;
+                }
+                outFile << "2nd" << std::endl;
 
-                tracker->features->node_adjacency_mat[jump_node_idx][tracker->features->objective_nodes.back()] = -1;
-                tracker->features->node_adjacency_mat[tracker->features->objective_nodes.back()][jump_node_idx] = -1;
+                if (jump_node_idx > -1 && !tracker->features->objective_nodes.empty())
+                {
+                    tracker->features->node_adjacency_mat[jump_node_idx][tracker->features->objective_nodes.back()] = -1;
+                    tracker->features->node_adjacency_mat[tracker->features->objective_nodes.back()][jump_node_idx] = -1;
+                }
+                outFile << "3rd" << std::endl;
 
-                tracker->features->node_adjacency_mat[tracker->features->objective_nodes.back()][curr_node] = 0;
-                tracker->features->node_adjacency_mat[curr_node][tracker->features->objective_nodes.back()] = 0;
-                
-                tracker->features->objective_nodes.push_back(jump_node_idx);
+                if (curr_node > -1 && !tracker->features->objective_nodes.empty())
+                {
+                    tracker->features->node_adjacency_mat[tracker->features->objective_nodes.back()][curr_node] = 0;
+                    tracker->features->node_adjacency_mat[curr_node][tracker->features->objective_nodes.back()] = 0;
+                }
 
             } else
             {
                 outFile << "evaluating objective velocity " << std::endl;
 
-                tracker->Remove_Node(jump_node_idx);
+                outFile << "jump_node_idx " << jump_node_idx << std::endl;
+                if (jump_node_idx >= 0)
+                {
+                    tracker->Remove_Node(jump_node_idx);
+                }
                 jump_node_idx = -1;
                 jump_delta = 0;
 
-                int node = tracker->features->objective_nodes.back();
-                tracker->features->objective_nodes.clear();
-                // otherwise delete the jump node and proceed normally
+                if (!tracker->features->objective_nodes.empty())
+                {
+                    int node = tracker->features->objective_nodes.back();
+                    tracker->features->objective_nodes.clear();
+                    // otherwise delete the jump node and proceed normally
 
-                outFile << "cleared objectives .. proceed to find a new path" << std::endl;            
-                
-                outFile << "PRUNING NODE " << node << " current node " << tracker->features->current_node << std::endl;
-                tracker->Remove_Node(node);
-                
-                Scan_Environment(1, true);
+                    outFile << "cleared objectives .. proceed to find a new path" << std::endl;            
+                    
+                    outFile << "PRUNING NODE " << node << " current node " << tracker->features->current_node << std::endl;
+                    tracker->Remove_Node(node);
+                    
+                    Scan_Environment(1, true);
+                }
             }
 
             jump_status = false;
@@ -386,14 +436,24 @@ void Hunter_Agent::Navigate()
         }
     }
 
+    outFile << "checking if needs a new path" << std::endl;
+
     if (!tracker->features->objective_nodes.empty())
     {
         outFile << tracker->features->objective_nodes.size() << " OBJECTIVES" << std::endl;
-        for (int o : tracker->features->objective_nodes)
+        if (tracker->features->objective_nodes.size() > pool_size)
         {
-            vec pos = tracker->features->node_positions[o];
-            outFile << o << " x: " << pos.x << " y: " << pos.y << "z: " << pos.z << std::endl;
+            outFile << "invalid memory access" << std::endl;
+            return;
+        } else
+        {
+            for (int o : tracker->features->objective_nodes)
+            {
+                vec pos = tracker->features->node_positions[o];
+                outFile << o << " x: " << pos.x << " y: " << pos.y << "z: " << pos.z << std::endl;
+            }
         }
+
     } else
     {
         interface->Keyboard_Event(interface->sdl_keys.SDLK_w, interface->sdl_util.SDL_KEYUP, interface->sdl_util.SDL_RELEASED);
@@ -466,6 +526,8 @@ void Hunter_Agent::Navigate()
             }
         }  
     }
+
+    outFile << "checking if path is set to follow" << std::endl;
 
     if (!tracker->features->objective_nodes.empty())
     {

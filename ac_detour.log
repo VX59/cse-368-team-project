@@ -1,6 +1,10 @@
-2 OBJECTIVES
-362 x: 79.5088 y: 111.568z: 5.721
-359 x: 85.9397 y: 112.01z: 5.5
-Connected Nodes 384 Free Nodes 640
-Target Distance 11.5706
-1.111
+checking if reached objective
+checking if stuck on a path
+checking jump node request
+checking if needs a new path
+1 OBJECTIVES
+120 x: 253.891 y: 348.8z: 9.5
+checking if path is set to follow
+Connected Nodes 121 Free Nodes 1927
+Target Distance 93.1724
+.507
