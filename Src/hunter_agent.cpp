@@ -198,7 +198,7 @@ void Hunter_Agent::Scan_Environment(int k, bool add_obj)
             
             tracker->Target_Ray_Trace(to, &tr);
 
-            vec delta = {(tr.end.x-from.x)/2, (tr.end.y-from.y)/2, from.z};
+            vec delta = {(tr.end.x-from.x)*2.0/3.0, (tr.end.y-from.y)*2.0/3.0, from.z};
             scan_distance = sqrtf(pow(delta.x,2) + pow(delta.y,2));
 
             to = {from.x + delta.x, from.y + delta.y, from.z};
