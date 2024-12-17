@@ -5,13 +5,13 @@
 \usepackage[T1]{fontenc}   % Font encoding
 \usepackage{amsmath,amssymb,amsfonts} % Math packages
 \usepackage{graphicx}      % For including graphics
+\usepackage{xcolor}        % For colored text
 \usepackage{hyperref}      % For hyperlinks
 \usepackage{geometry}      % For page layout
 \usepackage{float}         % For better float placement
 \usepackage{enumitem}      % For custom lists
 \usepackage{caption}       % For captions
 \usepackage{subcaption}    % For subfigures
-\usepackage{xcolor}        % For colored text
 \usepackage{listings}
 \usepackage{csvsimple}  % Package for handling CSV files
 
@@ -130,13 +130,13 @@ The metric used to determine the success of the AI is the exploration and kill-r
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\textwidth]{areaExploredGraph.png}
+    \includegraphics[width=0.8\textwidth]{areaExploredGraph.png}
     \caption{AI versus randomized algorithm movement.}
     \label{fig:three}
 \end{figure}
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\textwidth]{killsGraph.png}
+    \includegraphics[width=0.8\textwidth]{killsGraph.png}
     \caption{AI versus randomized algorithm kill-rate.}
     \label{fig:four}
 \end{figure}
@@ -147,4 +147,18 @@ The results overwhelming indicate the success of the AI as opposed to random mov
 The biggest skills picked up during this project was our unique way of interacting with the environment. Rather than rely on the open-source code and compile our AI directly into the game, we inject the AI’s code into the running process of the game. Similarly to the HW projects, we gained more experience with weighing certain decisions over another. Decisions like whether to be exploring, pathfinding to an enemy, attempting to jump over obstacles, or shooting at an enemy. While on paper not sounding too difficult, implementing in a 3D environment posed a challenge when compared to the 2D environment of games like Pacman. We had to account for the yaw and pitch of the AI and its XYZ. 
 
 We are satisfied with how our AI has developed. Going back, if we could have handled code injection and environment setup sooner/cleaner more work could have been done for the AI. Having experimented with machine-learning algorithms would have been a very good learning experience, although we figured we may not have enough time to train a model properly. We think that a machine-learning approach is the next best step for this sort of AI. Conditional-based AI is commonly used in videogames, whereas any sort of adaptive ML-based AI is rarer. The potential for a more robust AI that learns from analyzing other players or its own gameplay will be one of the next revolutionary steps in the gaming industry. 
+
+\enlargethispage{14\baselineskip}
+\section{Resources}
+\begin{table}[H]
+    \begin{tabular}{|p{0.3\textwidth}|p{0.6\textwidth}|}
+        \hline
+        \textbf{Source} & \textbf{Description} \\ \hline
+        \href{https://github.com/VX59/cse-368-team-project}{Project Repo (Link)} & Repo hosting code for this paper. \\ \hline
+        \href{https://github.com/assaultcube/AC}{AssaultCube Source (Link)} & Source code of AssaultCube. \\ \hline
+        \href{https://github.com/faluthe/vtable-hook}{V-Table Guide (Link)} & Reference for v-table hooking (by Falu). \\ \hline
+        \href{https://github.com/microsoft/Detours/wiki}{Detours Wiki (Link)} & Detour hooking resources. \\ \hline
+        Lecture 2 & Uninformed Search \& Graphs (BFS) \\ \hline
+    \end{tabular}
+\end{table}
 \end{document}
