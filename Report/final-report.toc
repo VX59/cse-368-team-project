@@ -2,6 +2,6 @@
 \contentsline {section}{\numberline {2}Technologies \& Techniques Explored}{2}{section.2}%
 \contentsline {section}{\numberline {3}Methods \& Methodology}{3}{section.3}%
 \contentsline {subsection}{\numberline {3.1}Aimbot}{3}{subsection.3.1}%
-\contentsline {subsection}{\numberline {3.2}Navigation \& Targeting}{3}{subsection.3.2}%
-\contentsline {section}{\numberline {4}Performance Evaluation}{4}{section.4}%
-\contentsline {section}{\numberline {5}Conclusion}{4}{section.5}%
+\contentsline {subsection}{\numberline {3.2}Navigation \& Targeting}{4}{subsection.3.2}%
+\contentsline {section}{\numberline {4}Performance Evaluation}{5}{section.4}%
+\contentsline {section}{\numberline {5}Conclusion}{6}{section.5}%

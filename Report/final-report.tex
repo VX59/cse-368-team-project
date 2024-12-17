@@ -52,11 +52,11 @@
 AssaultCube is a 3D first-person shooter from 2006. It's based on the Cube engine written in C++. Assault Cube features a variety of game modes that include team based combat, we will focus on the free for all deathmatch gamemode. The goal of each player is to accumulate the most number of eliminations. Artificial intelligence (AI) plays a big role in enhancing gameplay. Specifically, in games like AssaultCube, AI algorithms are used in enemy/ally bots for enabling numerous capabilities such as pathfinding to areas of interest and targeting enemies. These features of the built-in AssaultCube bots add to the immersive and unpredictable nature of the game. In this project, we implemented a different flavor of AI bot that accomplishes many of the objectives of the built-in bots. To implement this, we developed custom \textbf{detour hooking} code to patch the main gameplay loop, adding an adaptive decision-making algorithm that will control our AIs movement, pathfinding, and targeting decisions. Our agent is able to continuously learn, remember routes and solve problems unlike the Assault-Cube agents giving it an advantage over enemies.
 
 \section{Technologies \& Techniques Explored}
-The initial technologies investigated were machine-learning based. We decided on trying our hand at implementing a reinforcment-learning agent using existing libraries. Two notable libraries explored were Tensorflow and Mlpack. Conditional techniques and graph based decision making were later considered as a more straightforward approach later in the project due to time constraints and overall complexity vs. performance.
+The initial technologies investigated were machine-learning based. We decided on trying our hand at implementing a reinforcment-learning agent using existing libraries. Two notable libraries explored were Tensorflow and mlpack. Conditional techniques and graph based decision making were later considered as a more straightforward approach later in the project due to time constraints and overall complexity vs. performance.
 
-Both \textbf{Tensorflow} and \textbf{Mlpack} are machine-learning libraries for Python and C++, respectively. Tensorflow had high consideration due to its robust framework and well-established libraries, it was also in a more familiar Python environment. It was ultimately determined to not be as suitable for the project requirements because it would’ve required a complex memory-sharing setup between different processes to accomplish properly as well as creating python bindings between the AI and the hook code. While Mlpack would be straightforward and could run under the same process as the game as it is C++, it posed the challenge of potentially long training times and lack of training resources. Like bots that are already implemented in AssaultCube, an adaptive conditional-based algorithm was chosen for the AI. These Bots utilize a pre-made graph for each path and the A-Star pathfinding algorithm. Being able to control the condition-actions, level of learning, and overall algorithm gave more flexibility in how the AI is controlled. This algorithm was injected into AssaultCube via GDB, which would run the agent process once per game-tick.
+Both \textbf{Tensorflow} and \textbf{mlpack} are machine-learning libraries for Python and C++, respectively. Tensorflow had high consideration due to its robust framework and well-established libraries, it was also in a more familiar Python environment. It was ultimately determined to not be as suitable for the project requirements because it would’ve required a complex memory-sharing setup between different processes to accomplish properly as well as creating python bindings between the AI and the hook code. While mlpack would be straightforward and could run under the same process as the game as it is C++, it posed the challenge of potentially long training times and lack of training resources. Like bots that are already implemented in AssaultCube, an adaptive conditional-based algorithm was chosen for the AI. These Bots utilize a pre-made graph for each path and the A-Star pathfinding algorithm. Being able to control the condition-actions, level of learning, and overall algorithm gave more flexibility in how the AI is controlled. This algorithm was injected into AssaultCube via GDB, which would run the agent process once per game-tick.
 
-Our group was familiar with Tensorflow due to its popularity as a Python machine-learning library, although not every member had hands-on experience with it. The discovery of Mlpack came from researching machine-learning libraries specific to a C++ environment. A conditional-based algorithm idea came from work done in class. Specifically, homework assignments like Pacman AI, where we would assign reward values to certain game states to determine what comes next. Conditional AIs are also very common for games to use in general, they provide a way for developers to make simple rules for bots to follow without complicating their mechanics.
+Our group was familiar with Tensorflow due to its popularity as a Python machine-learning library, although not every member had hands-on experience with it. The discovery of mlpack came from researching machine-learning libraries specific to a C++ environment. A conditional-based algorithm idea came from work done in class. Specifically, homework assignments like Pacman AI, where we would assign reward values to certain game states to determine what comes next. Conditional AIs are also very common for games to use in general, they provide a way for developers to make simple rules for bots to follow without complicating their mechanics.
 
 I am also testing the same algorithm refactored in omp so that I can run it on a CCR0-CPU node to compare the performance. I chose the n domain to start at 2 thousand and proceed by powers of 2 untill $256e3$. I am starting at 1 core to get T\_1 and proceeding by powers of 2 until 64 cores.
 
@@ -81,6 +81,23 @@ The aimbot algorithm was relatively simply and consistent. At a high-level, when
 
 One of the purposes of our AI is to be realistic, so not necessarily cheat. The AI would only aim at an enemy if it could see them, similar to a real human, rather than target-locking all enemies and running towards them. To achieve this, we had to make sure that an enemy player is on-screen, and also not obstructed by any object (or another player). Determining if a player is on-screen is simply a result of matrix multiplication involving the Model-View-Projection matrix and player XYZ coordinates. If the resulting output is a valid screen coordinate (within the bounds of the game resolution and non-negative), then the player is on-screen. 
 
+\begin{figure}[H]
+    \centering
+    \begin{minipage}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{tracelineCollision.png}
+        \caption{AI Detecting Another Player}
+        \label{fig:one}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{tracelineNoCollision.png}
+        \caption{AI Vision Blocked (No Detection)}
+        \label{fig:two}
+    \end{minipage}
+\end{figure}
+
 \subsection{Navigation \& Targeting}
 The development of the modern navigation algorithm took about a month in total and is slightly different from the first used approach. The navigation for the agent is graph based and follows several design characteristics. It needs to be able to learn, unlearn and remember paths. Paths in the graph represent a series of points on the map that the agent can follow progressively without getting stuck. It also needs to be able to overcome obstacles, such as tiny rooms, boxes, ledges, fences. It needs to be approximate paths to targets outside the graph reliably. This long list of requirements seems very complicated and daunting but we were able to develop a relatively simple algorithm that posseses all of these characteristics while remaining computationally efficient.
 
@@ -98,11 +115,33 @@ Then the agent checks if the objectives are set and if not it finds the closest 
 This is a continuously learning approximation algorithm that can self optimize and play on any map without needing to hardcode objectives. Its very robust and almost all atempts to make it stuck were unsuccessfult except for throwing it down a well. Graph pruning is implemented in a way that means more edges cover more area of the map and allow the agent to learn massive complex spaces with relatively little complexity. It also has some hyperparameters we can tweak to change the learning behavior and capabilities like k and the max number of nodes.
 
 \section{Performance Evaluation}
-(Was the model successful?) 
 
-(Provide qualitative proof) 
+Our AI is capable of exploration, targeted pathfinding, and eliminating opponents. In runs of the AI we observe it doing the following things:
 
-(Provide quantitative proof, in the form of a table/graph.) 
+	\begin{enumerate}
+    \item Slowly exploring the area around it.
+
+    \item Targeting enemies when they are seen.
+
+    \item Prioritizing high-kill areas (areas where enemies are more likely to be seen).
+	\end{enumerate}
+
+The metric used to determine the success of the AI is the exploration and kill-rate of AI movement versus randomized movement. Randomized movement, for the sake of this project, is defined as moving forward, backward, left, right, or diagonal along with randomly looking around at an angle perpendicular to the floor. Randomized movement follows no matching behavior to AI movement, other than the aimbot system (in order to observe kill-rates fairly). Exploration is defined as the number of unique X, Y coordinates visited under each algorithm. For example, visiting coordinates (1, 1), (2, 1) then (1, 1) would constitute two unique explorations. Kill-rate is simply number of eliminations the algorithm has achieved. The following results were achieved by running the algorithms on Bot Deathmatch, versus three bots (bad difficulty), on the map \textit{ac\_africa}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{areaExploredGraph.png}
+    \caption{AI versus randomized algorithm movement.}
+    \label{fig:three}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{killsGraph.png}
+    \caption{AI versus randomized algorithm kill-rate.}
+    \label{fig:four}
+\end{figure}
+
+The results overwhelming indicate the success of the AI as opposed to random movement. This success is a result of the AI behaving cleverly in comparison to the random movement. The hyperfocus on eliminating enemies and sticking to areas that have higher enemy concentration clearly assists it in achieving its goals.
 
 \section{Conclusion}
 The biggest skills picked up during this project was our unique way of interacting with the environment. Rather than rely on the open-source code and compile our AI directly into the game, we inject the AI’s code into the running process of the game. Similarly to the HW projects, we gained more experience with weighing certain decisions over another. Decisions like whether to be exploring, pathfinding to an enemy, attempting to jump over obstacles, or shooting at an enemy. While on paper not sounding too difficult, implementing in a 3D environment posed a challenge when compared to the 2D environment of games like Pacman. We had to account for the yaw and pitch of the AI and its XYZ. 
