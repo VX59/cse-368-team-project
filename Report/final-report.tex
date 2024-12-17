@@ -58,8 +58,6 @@ Both \textbf{Tensorflow} and \textbf{mlpack} are machine-learning libraries for 
 
 Our group was familiar with Tensorflow due to its popularity as a Python machine-learning library, although not every member had hands-on experience with it. The discovery of mlpack came from researching machine-learning libraries specific to a C++ environment. A conditional-based algorithm idea came from work done in class. Specifically, homework assignments like Pacman AI, where we would assign reward values to certain game states to determine what comes next. Conditional AIs are also very common for games to use in general, they provide a way for developers to make simple rules for bots to follow without complicating their mechanics.
 
-I am also testing the same algorithm refactored in omp so that I can run it on a CCR0-CPU node to compare the performance. I chose the n domain to start at 2 thousand and proceed by powers of 2 untill $256e3$. I am starting at 1 core to get T\_1 and proceeding by powers of 2 until 64 cores.
-
 \section{Methods \& Methodology}
 To begin, we needed to programmatically set up an environment that our agent could interact with. This process involved a fair amount of game reverse engineering, and low-level knowledge of instruction processing. We successfully developed a custom detour hooking method that was applied to a function called \textit{checkinput()} in the game’s main loop. This allowed us to have our own code that ran once per frame. Once we had runnable code inside the game we could extract relevant information related to the player and the current environment. The game could also be controlled simulating an actual human controlling the game via our injected code. 
 
@@ -113,6 +111,16 @@ Next we evaluate if we are in proximity of a jump node and jump if we are. Then 
 Then the agent checks if the objectives are set and if not it finds the closest node to the target and BFS's to that node. If the graph was cut into multiple partitions and that node isn't reachable the agent proceeds to find the closest connected node it can actually access. The BFS path is stacked onto the objectives. If the agent finds itself outside the graph for some reason, BFS was not successful we simply Prune and Scan until it finds the graph again.
 
 This is a continuously learning approximation algorithm that can self optimize and play on any map without needing to hardcode objectives. Its very robust and almost all atempts to make it stuck were unsuccessfult except for throwing it down a well. Graph pruning is implemented in a way that means more edges cover more area of the map and allow the agent to learn massive complex spaces with relatively little complexity. It also has some hyperparameters we can tweak to change the learning behavior and capabilities like k and the max number of nodes.
+
+\begin{figure}[H]
+    \centering
+    \begin{minipage}[b]{0.55\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{nav.jpg}
+        \caption{Navigation Algorithm}
+        \label{fig:three}
+    \end{minipage}
+\end{figure}
 
 \section{Performance Evaluation}
 
